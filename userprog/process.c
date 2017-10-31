@@ -30,7 +30,7 @@ process_execute (const char *file_name)
 {
   char *fn_copy;
   tid_t tid;
-  size_t name_len;
+  //size_t name_len;
 
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
@@ -40,7 +40,7 @@ process_execute (const char *file_name)
 
 
   strlcpy (fn_copy, file_name, PGSIZE);
-  for(name_len = 0;(name_len != '\0');name_len++){
+  /*for(name_len = 0;(name_len != '\0');name_len++){
       if(file_name[name_len] == ' ')
       {
           //file_name[name_len] = '\0';
@@ -49,6 +49,7 @@ process_execute (const char *file_name)
   }
   fn_copy += 5;
   printf("%s\n",fn_copy);
+  */
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
 
@@ -457,8 +458,8 @@ setup_stack (void **esp)
       if (success) {
           //minor change to get program running that dont examine vars
 
-        //*esp = PHYS_BASE-12;
-        *esp = PHYS_BASE;
+        *esp = PHYS_BASE-12;
+        //*esp = PHYS_BASE;
       } else
         palloc_free_page (kpage);
     }
