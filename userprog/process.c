@@ -29,29 +29,35 @@ tid_t
 process_execute (const char *file_name)
 {
   char *fn_copy;
+  char *program_name; // the parsed file name
   tid_t tid;
-  //size_t name_len;
+  size_t name_len; // used to increment through arr
 
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
   fn_copy = palloc_get_page (0);
-  if (fn_copy == NULL)
+  program_name = palloc_get_page(0);
+
+  if (fn_copy == NULL || program_name == NULL)
     return TID_ERROR;
 
 
+
   strlcpy (fn_copy, file_name, PGSIZE);
-  /*for(name_len = 0;(name_len != '\0');name_len++){
+  // parse file name for prog name
+  for(name_len = 0;name_len < PGSIZE;name_len++){
       if(file_name[name_len] == ' ')
       {
-          //file_name[name_len] = '\0';
+          program_name[name_len] = '\0';
           break;
       }
+      program_name[name_len] = file_name[name_len];
   }
-  fn_copy += 5;
-  printf("%s\n",fn_copy);
-  */
+  //fn_copy += 5;
+  printf("DEBUG:: %s\n",program_name);
+
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  tid = thread_create (program_name, PRI_DEFAULT, start_process, fn_copy);
 
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
@@ -457,9 +463,8 @@ setup_stack (void **esp)
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success) {
           //minor change to get program running that dont examine vars
-
-        *esp = PHYS_BASE-12;
-        //*esp = PHYS_BASE;
+        //*esp = PHYS_BASE-12;
+        *esp = PHYS_BASE;
       } else
         palloc_free_page (kpage);
     }
