@@ -53,7 +53,7 @@ process_execute (const char *file_name)
       }
       program_name[name_len] = file_name[name_len];
   }
-  //fn_copy += 5;
+
   printf("DEBUG:: %s\n",program_name);
 
   /* Create a new thread to execute FILE_NAME. */
