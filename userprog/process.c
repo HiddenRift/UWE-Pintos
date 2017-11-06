@@ -58,17 +58,17 @@ process_execute (const char *file_name)
       }
       program_name[name_len] = file_name[name_len];
   }
-<<<<<<< HEAD
+
   // in case no delimiter found, append one to end.
   // dont worry array is 1 bigger to allow for this.S
   program_name[++name_len] = '\0';
 
-=======
+
   //fn_copy += 5;
 
 
   //Rob this is terrible
->>>>>>> master
+
   printf("DEBUG:: %s\n",program_name);
 
   /* Create a new thread to execute FILE_NAME. */
