@@ -258,9 +258,12 @@ load (const char *file_name, void (**eip) (void), void **esp)
   off_t file_ofs;
   bool success = false;
   int i;
-  int name_len;
+
+  int name_len; // iterator for name parse loop
   char program_name[MAXFILENAMELEN + 1];
   int argv_val = 0; //value to be set in parseargs func
+  int args_len = 0;
+
 
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();
@@ -366,7 +369,9 @@ load (const char *file_name, void (**eip) (void), void **esp)
   if (!setup_stack (esp))
     goto done;
 
-  parse_arg_string(file_name, &argv_val);
+  args_len = parse_arg_string(file_name, &argv_val);
+
+  pass_args_to_stack(esp, file_name, argv_val, args_len);
 
   /* Start address. */
   *eip = (void (*) (void)) ehdr.e_entry;
@@ -579,7 +584,56 @@ int
 pass_args_to_stack(void **esp, const char *arg_string, int argv, int arg_size)
 {
     //probably buggy
+    char *stack_ptr = *esp;
+    stack_ptr = stack_ptr - arg_size;
+    char **temp_argv_pointers;
+    //allocates memory for argv values;
+    // WARNING: Assumes running on a 32 bit system
+    //temp_argv_pointers = malloc(4 * argv);
+    //printf("PHYSBASE init at : 0x%x\n", *esp);
+    // set up stack pointer
+    int ptr_num = 0;
+    int newarg = 1;
+    int prevspace = 0;
+    size_t i = 0; // used in iterator
 
+    for (i = 0; i < strlen(arg_string); i++)
+    {
+        printf("writing on on %d of %d at 0x%x\n", i, arg_size, stack_ptr);
+        /* code */
+        if(arg_string[i] != ' ')
+        {
+            if(newarg == 1)
+            {
+                //temp_argv_pointers[ptr_num++] = stack_ptr;
+                newarg = 0;
+
+            }
+            //ASSERT (stack_ptr < PHYS_BASE);
+            *stack_ptr = arg_string[i];
+            stack_ptr++;
+
+            prevspace = 0;
+        }
+        if(arg_string[i] == ' ')
+        {
+            if(prevspace == 0)
+            {
+                //ASSERT (stack_ptr < PHYS_BASE);
+                *stack_ptr = '\0';
+                stack_ptr++;
+                prevspace = 1;
+                newarg = 1;
+            }
+        }
+    }
+    if(arg_string[i - 1] != ' ')
+    {
+        //ASSERT (stack_ptr < PHYS_BASE);
+        *stack_ptr = '\0';
+        stack_ptr++;
+    }
+    //printf("DEBUG:: %s \n", temp_argv_pointers[0]);
     return 1;
 }
 
