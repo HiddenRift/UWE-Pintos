@@ -243,7 +243,7 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
                           bool writable);
 
 
-int pass_args_to_stack(void **esp, const char *arg_string, int argv);
+int pass_args_to_stack(void **esp, const char *arg_string, int argv, int arg_size);
 int parse_arg_string(const char *arg_string, int *argv);
 /* Loads an ELF executable from FILE_NAME into the current thread.
    Stores the executable's entry point into *EIP
@@ -576,9 +576,10 @@ parse_arg_string(const char *arg_string, int *argv)
     return decby;
 }
 int
-pass_args_to_stack(void **esp, const char *arg_string, int argv)
+pass_args_to_stack(void **esp, const char *arg_string, int argv, int arg_size)
 {
-    
+    //probably buggy
+
     return 1;
 }
 
