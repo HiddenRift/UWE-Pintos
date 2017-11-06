@@ -242,6 +242,9 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
                           uint32_t read_bytes, uint32_t zero_bytes,
                           bool writable);
 
+
+int pass_args_to_stack(void **esp, const char *arg_string, int argv);
+int parse_arg_string(const char *arg_string, int *argv);
 /* Loads an ELF executable from FILE_NAME into the current thread.
    Stores the executable's entry point into *EIP
    and its initial stack pointer into *ESP.
@@ -257,6 +260,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   int i;
   int name_len;
   char program_name[MAXFILENAMELEN + 1];
+  int argv_val = 0; //value to be set in parseargs func
 
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();
@@ -361,6 +365,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
   /* Set up stack. */
   if (!setup_stack (esp))
     goto done;
+
+  parse_arg_string(file_name, &argv_val);
 
   /* Start address. */
   *eip = (void (*) (void)) ehdr.e_entry;
@@ -521,6 +527,59 @@ install_page (void *upage, void *kpage, bool writable)
      address, then map our page there. */
   return (pagedir_get_page (t->pagedir, upage) == NULL
           && pagedir_set_page (t->pagedir, upage, kpage, writable));
+}
+
+int
+parse_arg_string(const char *arg_string, int *argv)
+{
+    //set number_args to *argv
+    // return length
+    int decby = 0;
+    int argv_tmp = 0;
+    int newarg = 1;
+    int prevspace = 0;
+    size_t i = 0; // used in iterator
+
+    for (i = 0; arg_string[i] != '\0'; i++)
+    {
+        /* code */
+        if(arg_string[i] != ' ')
+        {
+            if(newarg == 1)
+            {
+                argv_tmp++;
+                newarg = 0;
+            }
+            decby++;
+            prevspace = 0;
+        }
+        if(arg_string[i] == ' ')
+        {
+            if(prevspace == 0)
+            {
+                decby++;
+                prevspace = 1;
+                newarg = 1;
+            }
+        }
+    }
+
+    // if string ends with space then it will count otherwise add one more to make room for null term
+    if(arg_string[i - 1] != ' ')
+    {
+        decby++;
+    }
+    // debug
+    printf("::DEBUG:: argv: %d, length: %d\n", argv_tmp, decby);
+    // assign
+    *argv = argv_tmp;
+    return decby;
+}
+int
+pass_args_to_stack(void **esp, const char *arg_string, int argv)
+{
+
+    return 1;
 }
 
 //--------------------------------------------------------------------
