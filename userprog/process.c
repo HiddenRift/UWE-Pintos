@@ -18,6 +18,9 @@
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 
+/* ADDED DEFINITIONS */
+#define MAXFILENAMELEN 14
+
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
@@ -29,23 +32,25 @@ tid_t
 process_execute (const char *file_name)
 {
   char *fn_copy;
-  char *program_name; // the parsed file name
+  //old parsed file name
+  //char *program_name; // the parsed file name
   tid_t tid;
   size_t name_len; // used to increment through arr
 
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
   fn_copy = palloc_get_page (0);
-  program_name = palloc_get_page(0);
+  //program_name = palloc_get_page(0);
+  char program_name[MAXFILENAMELEN + 1];
 
-  if (fn_copy == NULL || program_name == NULL)
+  if (fn_copy == NULL)
     return TID_ERROR;
 
 
 
   strlcpy (fn_copy, file_name, PGSIZE);
   // parse file name for prog name
-  for(name_len = 0;name_len < PGSIZE;name_len++){
+  for(name_len = 0;name_len < MAXFILENAMELEN;name_len++){
       if(file_name[name_len] == ' ')
       {
           program_name[name_len] = '\0';
@@ -53,6 +58,9 @@ process_execute (const char *file_name)
       }
       program_name[name_len] = file_name[name_len];
   }
+  // in case no delimiter found, append one to end.
+  // dont worry array is 1 bigger to allow for this.S
+  program_name[++name_len] = '\0';
 
   printf("DEBUG:: %s\n",program_name);
 
@@ -61,6 +69,8 @@ process_execute (const char *file_name)
 
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
+
+  //palloc_free_page(program_name);
   return tid;
 }
 
@@ -238,6 +248,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
   off_t file_ofs;
   bool success = false;
   int i;
+  int name_len;
+  char program_name[MAXFILENAMELEN + 1];
 
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();
@@ -245,8 +257,21 @@ load (const char *file_name, void (**eip) (void), void **esp)
     goto done;
   process_activate ();
 
+  // parse file name out
+  for(name_len = 0;name_len < MAXFILENAMELEN;name_len++){
+      if(file_name[name_len] == ' ')
+      {
+          program_name[name_len] = '\0';
+          break;
+      }
+      program_name[name_len] = file_name[name_len];
+  }
+  // in case no delimiter found, append one to end.
+  // dont worry array is 1 bigger to allow for this.S
+  program_name[++name_len] = '\0';
+
   /* Open executable file. */
-  file = filesys_open (file_name);
+  file = filesys_open (program_name);
 
   if (file == NULL)
     {
