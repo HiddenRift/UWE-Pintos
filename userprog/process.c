@@ -243,7 +243,7 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
                           bool writable);
 
 
-int pass_args_to_stack(void **esp, const char *arg_string, int argv, int arg_size);
+int pass_args_to_stack(void **esp, char *arg_string, int argv, int arg_size);
 int parse_arg_string(const char *arg_string, int *argv);
 /* Loads an ELF executable from FILE_NAME into the current thread.
    Stores the executable's entry point into *EIP
@@ -581,9 +581,57 @@ parse_arg_string(const char *arg_string, int *argv)
     return decby;
 }
 int
-pass_args_to_stack(void **esp, const char *arg_string, int argv, int arg_size)
+pass_args_to_stack(void **esp, char *arg_string, int argv, int arg_size)
 {
-    
+    // to store strtok r position
+    char *strtok_save;
+    // create stack pointer local
+    char *stack_ptr = *esp;
+    // decrement pointer
+    stack_ptr -= arg_size;
+    //create pointer to argv  but first align to nearest 32 bit
+    uint32_t *arg_pointers = stack_ptr - ((uint32_t)stack_ptr % 4);
+    // decrement arg pointer by (argv + 1) * 4(32 bits)
+    arg_pointers -= (argv + 1) * 4;
+    // cur arg to hold ptr to cur string from strtok;
+    char *cur_arg;
+    //cur_arg len to hold the length of str cur_arg points to
+    int cur_arg_length = 0;
+    for (size_t i = 0; i < argv; i++)
+    {
+        if(i == 0)
+        {
+            cur_arg = strtok_r(arg_string, " ", &strtok_save);
+        }
+        else
+        {
+            cur_arg = strtok_r(NULL, " ", &strtok_save);
+        }
+        cur_arg_length = strlen(cur_arg) + 1;
+        strlcpy(stack_ptr, cur_arg, cur_arg_length);
+        //assign location of str to arg_pointers
+        *arg_pointers = stack_ptr;
+        //increment by 4
+        arg_pointers += 4;
+        printf("DEBUG:%d: %s\n",i,stack_ptr);
+        stack_ptr += cur_arg_length;
+
+    }
+    //insert null pointer
+    arg_pointers = 0;
+    /*
+    cur_arg = strtok_r(arg_string, " ", &strtok_save);
+    cur_arg_length = strlen(cur_arg) + 1;
+    strlcpy(stack_ptr, cur_arg, cur_arg_length);
+    printf("DEBUG:3: %s\n",stack_ptr);
+    stack_ptr += cur_arg_length + 1;
+
+    cur_arg = strtok_r(NULL, " ", &strtok_save);
+    cur_arg_length = strlen(cur_arg) + 1;
+    strlcpy(stack_ptr, cur_arg, cur_arg_length);
+    printf("DEBUG:4: %s\n",stack_ptr);
+    */
+
 /*
     //probably buggy
     char *stack_ptr = *esp;
