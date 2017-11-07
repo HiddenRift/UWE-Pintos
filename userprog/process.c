@@ -585,12 +585,13 @@ pass_args_to_stack(void **esp, const char *arg_string, int argv, int arg_size)
 {
     //probably buggy
     char *stack_ptr = *esp;
+    printf("PHYSBASE init at : 0x%x \n", stack_ptr);
     stack_ptr = stack_ptr - arg_size;
     char **temp_argv_pointers;
     //allocates memory for argv values;
     // WARNING: Assumes running on a 32 bit system
     //temp_argv_pointers = malloc(4 * argv);
-    //printf("PHYSBASE init at : 0x%x\n", *esp);
+    printf("btm at 0x%x \n", stack_ptr);
     // set up stack pointer
     int ptr_num = 0;
     int newarg = 1;
