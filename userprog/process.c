@@ -583,6 +583,7 @@ parse_arg_string(const char *arg_string, int *argv)
 int
 pass_args_to_stack(void **esp, const char *arg_string, int argv, int arg_size)
 {
+
     //probably buggy
     char *stack_ptr = *esp;
     printf("PHYSBASE init at : 0x%x \n", stack_ptr);
@@ -601,7 +602,6 @@ pass_args_to_stack(void **esp, const char *arg_string, int argv, int arg_size)
     for (i = 0; i < strlen(arg_string); i++)
     {
         printf("writing on on %d of %d at 0x%x\n", i, arg_size, stack_ptr);
-        /* code */
         if(arg_string[i] != ' ')
         {
             if(newarg == 1)
@@ -635,6 +635,7 @@ pass_args_to_stack(void **esp, const char *arg_string, int argv, int arg_size)
         stack_ptr++;
     }
     //printf("DEBUG:: %s \n", temp_argv_pointers[0]);
+
     return 1;
 }
 
