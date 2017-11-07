@@ -591,6 +591,15 @@ pass_args_to_stack(void **esp, char *arg_string, int argv, int arg_size)
     stack_ptr -= arg_size;
     //create pointer to argv  but first align to nearest 32 bit
     uint32_t *arg_pointers = stack_ptr - ((uint32_t)stack_ptr % 4);
+    // create base pointer
+    // and set to pint to initial value of arg pointers
+    uint32_t *argc_init_ptr = arg_pointers;
+    argc_init_ptr -= 4;
+    *argc_init_ptr = arg_pointers;
+    argc_init_ptr -= 4;
+    *argc_init_ptr = argv;
+    argc_init_ptr -= 4;
+    *argc_init_ptr = 0; // return address
     // decrement arg pointer by (argv + 1) * 4(32 bits)
     arg_pointers -= (argv + 1) * 4;
     // cur arg to hold ptr to cur string from strtok;
@@ -618,7 +627,8 @@ pass_args_to_stack(void **esp, char *arg_string, int argv, int arg_size)
 
     }
     //insert null pointer
-    arg_pointers = 0;
+    *arg_pointers = 0;
+    *esp = argc_init_ptr;
     /*
     cur_arg = strtok_r(arg_string, " ", &strtok_save);
     cur_arg_length = strlen(cur_arg) + 1;
