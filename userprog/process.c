@@ -629,72 +629,7 @@ pass_args_to_stack(void **esp, char *arg_string, int argv, int arg_size)
     //insert null pointer
     *arg_pointers = 0;
     *esp = argc_init_ptr;
-    /*
-    cur_arg = strtok_r(arg_string, " ", &strtok_save);
-    cur_arg_length = strlen(cur_arg) + 1;
-    strlcpy(stack_ptr, cur_arg, cur_arg_length);
-    printf("DEBUG:3: %s\n",stack_ptr);
-    stack_ptr += cur_arg_length + 1;
-
-    cur_arg = strtok_r(NULL, " ", &strtok_save);
-    cur_arg_length = strlen(cur_arg) + 1;
-    strlcpy(stack_ptr, cur_arg, cur_arg_length);
-    printf("DEBUG:4: %s\n",stack_ptr);
-    */
-
-/*
-    //probably buggy
-    char *stack_ptr = *esp;
-    printf("PHYSBASE init at : 0x%x \n", stack_ptr);
-    stack_ptr = stack_ptr - arg_size;
-    char **temp_argv_pointers;
-    //allocates memory for argv values;
-    // WARNING: Assumes running on a 32 bit system
-    //temp_argv_pointers = malloc(4 * argv);
-    printf("btm at 0x%x \n", stack_ptr);
-    // set up stack pointer
-    int ptr_num = 0;
-    int newarg = 1;
-    int prevspace = 0;
-    size_t i = 0; // used in iterator
-
-    for (i = 0; i < strlen(arg_string); i++)
-    {
-        printf("writing on on %d of %d at 0x%x\n", i, arg_size, stack_ptr);
-        if(arg_string[i] != ' ')
-        {
-            if(newarg == 1)
-            {
-                //temp_argv_pointers[ptr_num++] = stack_ptr;
-                newarg = 0;
-
-            }
-            //ASSERT (stack_ptr < PHYS_BASE);
-            *stack_ptr = arg_string[i];
-            stack_ptr++;
-
-            prevspace = 0;
-        }
-        if(arg_string[i] == ' ')
-        {
-            if(prevspace == 0)
-            {
-                //ASSERT (stack_ptr < PHYS_BASE);
-                *stack_ptr = '\0';
-                stack_ptr++;
-                prevspace = 1;
-                newarg = 1;
-            }
-        }
-    }
-    if(arg_string[i - 1] != ' ')
-    {
-        //ASSERT (stack_ptr < PHYS_BASE);
-        *stack_ptr = '\0';
-        stack_ptr++;
-    }
-    //printf("DEBUG:: %s \n", temp_argv_pointers[0]);
-*/
+    
     return 1;
 }
 
