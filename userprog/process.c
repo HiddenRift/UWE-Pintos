@@ -592,15 +592,17 @@ pass_args_to_stack(void **esp, char *arg_string, int argv, int arg_size)
     stack_ptr -= arg_size;
     //create pointer to argv  but first align to nearest 32 bit
     uint32_t *arg_pointers = stack_ptr - ((uint32_t)stack_ptr % 4);
+    //if (arg_size %4)
+      //*arg_pointers = stack-ptr - (4 - (arg_size %4))
     // create base pointer
-    arg_pointers -= (argv + 1) * 4;
+    arg_pointers -= (argv + 1);
     // and set to point to initial value of arg pointers
     uint32_t *argc_init_ptr = arg_pointers;
-    argc_init_ptr -= 4;
+    argc_init_ptr -= 1;
     *argc_init_ptr = arg_pointers;
-    argc_init_ptr -= 4;
+    argc_init_ptr -= 1;
     *argc_init_ptr = argv;
-    argc_init_ptr -= 4;
+    argc_init_ptr -= 1;
     *argc_init_ptr = 0; // return address
     // decrement arg pointer by (argv + 1) * 4(32 bits)
     //arg_pointers -= (argv + 1) * 4; // old bug
@@ -621,9 +623,10 @@ pass_args_to_stack(void **esp, char *arg_string, int argv, int arg_size)
         cur_arg_length = strlen(cur_arg) + 1;
         strlcpy(stack_ptr, cur_arg, cur_arg_length);
         //assign location of str to arg_pointers
+        printf("putting address %x at %x",stack_ptr, arg_pointers);
         *arg_pointers = stack_ptr;
         //increment by 4
-        arg_pointers += 4;
+        arg_pointers++;
         printf("DEBUG:%d: %s\n",i,stack_ptr);
         stack_ptr += cur_arg_length;
 
@@ -632,6 +635,7 @@ pass_args_to_stack(void **esp, char *arg_string, int argv, int arg_size)
     *arg_pointers = 0;
 
     // update stack pointer and return
+    hex_dump ((uintptr_t) argc_init_ptr, argc_init_ptr ,104, true);
     *esp = argc_init_ptr;
     return 1;
 }
