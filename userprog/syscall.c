@@ -18,11 +18,11 @@ syscall_handler (struct intr_frame *f UNUSED)
 {
   //system calls go here
   uint32_t *p = f->esp;
-  printf (" in system call: system call numbder: %d\n", *p);
+  printf ("DEBUG:: in system call: system call number: %d\n", *p);
 
   switch (*p) {
-    case SYS_WRITE:{
-        /*add by lsc working */
+    /*case SYS_WRITE:{
+        //add by lsc working
         //printf("<2> In SYS_WRITE: %d\n", *p);
         int fd = *(int *)(f->esp +4);
         void *buffer = *(char**)(f->esp + 8);
@@ -33,6 +33,7 @@ syscall_handler (struct intr_frame *f UNUSED)
         break;
 
       }
+     */
 
     //  case SYS_EXIT:{
       //  do nothing;
