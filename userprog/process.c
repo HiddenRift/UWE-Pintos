@@ -580,6 +580,7 @@ parse_arg_string(const char *arg_string, int *argv)
     *argv = argv_tmp;
     return decby;
 }
+
 int
 pass_args_to_stack(void **esp, char *arg_string, int argv, int arg_size)
 {
@@ -592,7 +593,8 @@ pass_args_to_stack(void **esp, char *arg_string, int argv, int arg_size)
     //create pointer to argv  but first align to nearest 32 bit
     uint32_t *arg_pointers = stack_ptr - ((uint32_t)stack_ptr % 4);
     // create base pointer
-    // and set to pint to initial value of arg pointers
+    arg_pointers -= (argv + 1) * 4;
+    // and set to point to initial value of arg pointers
     uint32_t *argc_init_ptr = arg_pointers;
     argc_init_ptr -= 4;
     *argc_init_ptr = arg_pointers;
@@ -601,7 +603,7 @@ pass_args_to_stack(void **esp, char *arg_string, int argv, int arg_size)
     argc_init_ptr -= 4;
     *argc_init_ptr = 0; // return address
     // decrement arg pointer by (argv + 1) * 4(32 bits)
-    arg_pointers -= (argv + 1) * 4;
+    //arg_pointers -= (argv + 1) * 4; // old bug
     // cur arg to hold ptr to cur string from strtok;
     char *cur_arg;
     //cur_arg len to hold the length of str cur_arg points to
@@ -628,8 +630,9 @@ pass_args_to_stack(void **esp, char *arg_string, int argv, int arg_size)
     }
     //insert null pointer
     *arg_pointers = 0;
+
+    // update stack pointer and return
     *esp = argc_init_ptr;
-    
     return 1;
 }
 
