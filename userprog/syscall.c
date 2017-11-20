@@ -3,6 +3,7 @@
 #include <syscall-nr.h>
 #include "threads/interrupt.h"
 #include "threads/thread.h"
+#include "devices/shutdown.h"
 
 static void syscall_handler (struct intr_frame *);
 
@@ -36,8 +37,15 @@ syscall_handler (struct intr_frame *f UNUSED)
       }
 
 
-      case SYS_EXIT:
+    //  case SYS_EXIT:
         //do nothing;
+    //    break;
+
+      case SYS_HALT:
+        shutdown_power_off();
+        break;
+
+
 
     default: {
             printf("Unhandled SYSCALL(%d)\n", *p);
@@ -46,4 +54,3 @@ syscall_handler (struct intr_frame *f UNUSED)
     }
   }
 }
-
