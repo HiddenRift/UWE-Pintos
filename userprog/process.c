@@ -17,9 +17,9 @@
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
+
 /* ADDED DEFINITIONS */
 #define MAXFILENAMELEN 14
-
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
@@ -33,8 +33,7 @@ process_execute (const char *file_name)
 {
   char *fn_copy;
   //old parsed file name
-  //char *program_name;
-  // the parsed file name
+  //char *program_name; // the parsed file name
   tid_t tid;
   size_t name_len; // used to increment through arr
 
@@ -46,6 +45,8 @@ process_execute (const char *file_name)
 
   if (fn_copy == NULL)
     return TID_ERROR;
+
+
 
   strlcpy (fn_copy, file_name, PGSIZE);
   // parse file name for prog name
@@ -62,9 +63,12 @@ process_execute (const char *file_name)
   // dont worry array is 1 bigger to allow for this.S
   program_name[++name_len] = '\0';
 
+
   //fn_copy += 5;
 
+
   //Rob this is terrible
+
   printf("DEBUG:: %s\n",program_name);
 
   /* Create a new thread to execute FILE_NAME. */
@@ -75,9 +79,10 @@ process_execute (const char *file_name)
 
   //palloc_free_page(program_name);
   return tid;
-
 }
 
+/* A thread function that loads a user process and starts it
+   running. */
 static void
 start_process (void *file_name_)
 {
@@ -237,6 +242,9 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
                           uint32_t read_bytes, uint32_t zero_bytes,
                           bool writable);
 
+
+int pass_args_to_stack(void **esp, char *arg_string, int argv, int arg_size);
+int parse_arg_string(const char *arg_string, int *argv);
 /* Loads an ELF executable from FILE_NAME into the current thread.
    Stores the executable's entry point into *EIP
    and its initial stack pointer into *ESP.
@@ -251,8 +259,19 @@ load (const char *file_name, void (**eip) (void), void **esp)
   bool success = false;
   int i;
 
-  int name_len;
-  char program_name[MAXFILENAMELEN+1];
+  int name_len; // iterator for name parse loop
+  char program_name[MAXFILENAMELEN + 1];
+  int argv_val = 0; //value to be set in parseargs func
+  int args_len = 0;
+
+
+  /* Allocate and activate page directory. */
+  t->pagedir = pagedir_create ();
+  if (t->pagedir == NULL)
+    goto done;
+  process_activate ();
+
+  // parse file name out
   for(name_len = 0;name_len < MAXFILENAMELEN;name_len++){
       if(file_name[name_len] == ' ')
       {
@@ -261,16 +280,9 @@ load (const char *file_name, void (**eip) (void), void **esp)
       }
       program_name[name_len] = file_name[name_len];
   }
-
   // in case no delimiter found, append one to end.
   // dont worry array is 1 bigger to allow for this.S
   program_name[++name_len] = '\0';
-
-  /* Allocate and activate page directory. */
-  t->pagedir = pagedir_create ();
-  if (t->pagedir == NULL)
-    goto done;
-  process_activate ();
 
   /* Open executable file. */
   file = filesys_open (program_name);
@@ -356,6 +368,10 @@ load (const char *file_name, void (**eip) (void), void **esp)
   /* Set up stack. */
   if (!setup_stack (esp))
     goto done;
+
+  args_len = parse_arg_string(file_name, &argv_val);
+
+  pass_args_to_stack(esp, file_name, argv_val, args_len);
 
   /* Start address. */
   *eip = (void (*) (void)) ehdr.e_entry;
@@ -518,4 +534,111 @@ install_page (void *upage, void *kpage, bool writable)
           && pagedir_set_page (t->pagedir, upage, kpage, writable));
 }
 
+int
+parse_arg_string(const char *arg_string, int *argv)
+{
+    //set number_args to *argv
+    // return length
+    int decby = 0;
+    int argv_tmp = 0;
+    int newarg = 1;
+    int prevspace = 0;
+    size_t i = 0; // used in iterator
+
+    for (i = 0; arg_string[i] != '\0'; i++)
+    {
+        /* code */
+        if(arg_string[i] != ' ')
+        {
+            if(newarg == 1)
+            {
+                argv_tmp++;
+                newarg = 0;
+            }
+            decby++;
+            prevspace = 0;
+        }
+        if(arg_string[i] == ' ')
+        {
+            if(prevspace == 0)
+            {
+                decby++;
+                prevspace = 1;
+                newarg = 1;
+            }
+        }
+    }
+
+    // if string ends with space then it will count otherwise add one more to make room for null term
+    if(arg_string[i - 1] != ' ')
+    {
+        decby++;
+    }
+    // debug
+    printf("::DEBUG:: argv: %d, length: %d\n", argv_tmp, decby);
+    // assign
+    *argv = argv_tmp;
+    return decby;
+}
+
+int
+pass_args_to_stack(void **esp, char *arg_string, int argv, int arg_size)
+{
+    // to store strtok r position
+    char *strtok_save;
+    // create stack pointer local
+    char *stack_ptr = *esp;
+    // decrement pointer
+    stack_ptr -= arg_size;
+    //create pointer to argv  but first align to nearest 32 bit
+    uint32_t *arg_pointers = stack_ptr - ((uint32_t)stack_ptr % 4);
+    //if (arg_size %4)
+      //*arg_pointers = stack-ptr - (4 - (arg_size %4))
+    // create base pointer
+    arg_pointers -= (argv + 1);
+    // and set to point to initial value of arg pointers
+    uint32_t *argc_init_ptr = arg_pointers;
+    argc_init_ptr -= 1;
+    *argc_init_ptr = arg_pointers;
+    argc_init_ptr -= 1;
+    *argc_init_ptr = argv;
+    argc_init_ptr -= 1;
+    *argc_init_ptr = 0; // return address
+    // decrement arg pointer by (argv + 1) * 4(32 bits)
+    //arg_pointers -= (argv + 1) * 4; // old bug
+    // cur arg to hold ptr to cur string from strtok;
+    char *cur_arg;
+    //cur_arg len to hold the length of str cur_arg points to
+    int cur_arg_length = 0;
+    for (size_t i = 0; i < argv; i++)
+    {
+        if(i == 0)
+        {
+            cur_arg = strtok_r(arg_string, " ", &strtok_save);
+        }
+        else
+        {
+            cur_arg = strtok_r(NULL, " ", &strtok_save);
+        }
+        cur_arg_length = strlen(cur_arg) + 1;
+        strlcpy(stack_ptr, cur_arg, cur_arg_length);
+        //assign location of str to arg_pointers
+        printf("putting address %x at %x",stack_ptr, arg_pointers);
+        *arg_pointers = stack_ptr;
+        //increment by 4
+        arg_pointers++;
+        printf("DEBUG:%d: %s\n",i,stack_ptr);
+        stack_ptr += cur_arg_length;
+
+    }
+    //insert null pointer
+    *arg_pointers = 0;
+
+    // update stack pointer and return
+    hex_dump ((uintptr_t) argc_init_ptr, argc_init_ptr ,104, true);
+    *esp = argc_init_ptr;
+    return 1;
+}
+
 //--------------------------------------------------------------------
+
