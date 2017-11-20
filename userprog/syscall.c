@@ -5,13 +5,22 @@
 #include "threads/thread.h"
 #include "devices/shutdown.h"
 
+/*****Defines*********/
+#define ARG_1 4
+#define ARG_2 8
+#define ARG_3 12
+
+/*****Prototypes******/
 static void syscall_handler (struct intr_frame *);
 
+// validation function prototypes
 static int get_user (const uint8_t *uaddr);
 static uint32_t load_stack(struct intr_frame *f, int offset);
 
+// system call prototypes
 void handle_exit(int status);
 
+/*****Definitions****/
 void
 syscall_init (void)
 {
@@ -50,9 +59,8 @@ syscall_handler (struct intr_frame *f UNUSED)
 
   switch (*p) {
     case SYS_WRITE:{
-        //add by lsc working
         //printf("<2> In SYS_WRITE: %d\n", *p);
-        int fd = (int)load_stack(f, 4);
+        UNUSED int fd = (int)load_stack(f, 4);
         void *buffer = (char*)load_stack(f, 8);
         unsigned size = (unsigned)load_stack(f, 12);
         //int written_size = process_write(fd, buffer, size);
@@ -60,26 +68,20 @@ syscall_handler (struct intr_frame *f UNUSED)
         int written_size = size;
         f->eax = written_size;
         break;
-
-      }
-
-
-      case SYS_EXIT:
+    }
+    case SYS_EXIT:
         //do exit;
         handle_exit((int)load_stack(f, 4));
         break;
 
-      case SYS_HALT:
+    case SYS_HALT:
         shutdown_power_off();
         break;
 
-
-
-    default: {
+    default:
             printf("Unhandled SYSCALL(%d)\n", *p);
             thread_exit ();
             break;
-    }
   }
 }
 
