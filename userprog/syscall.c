@@ -6,6 +6,14 @@
 
 static void syscall_handler (struct intr_frame *);
 
+static uint32_t load_stack(struct intr_frame *f, int offset)
+{
+    // need to add check for valid address
+    // i.e. user can do bad things
+    //if(is)
+    return *((uint32_t*)(f->esp + offset));
+}
+
 void
 syscall_init (void)
 {
