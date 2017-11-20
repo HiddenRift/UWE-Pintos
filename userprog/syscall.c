@@ -34,8 +34,8 @@ load_stack(struct intr_frame *f, int offset)
     // i.e. user can do bad things
     if(get_user (f->esp + offset) == -1)
     {
-        //TODO:
-        //exit thread
+        //TODO: pass in correct error
+        handle_exit(-1);
     }
     return *((uint32_t*)(f->esp + offset));
 }
@@ -52,9 +52,12 @@ syscall_handler (struct intr_frame *f UNUSED)
     case SYS_WRITE:{
         //add by lsc working
         //printf("<2> In SYS_WRITE: %d\n", *p);
-        int fd = *(int *)(f->esp +4);
-        void *buffer = *(char**)(f->esp + 8);
-        unsigned size = *(unsigned *)(f->esp + 12);
+        //int fd = *(int *)(f->esp +4);
+        int fd = (int)load_stack(f, 4);
+        //void *buffer = *(char**)(f->esp + 8);
+        void *buffer = (char*)load_stack(f, 8);
+        //unsigned size = *(unsigned *)(f->esp + 12);
+        unsigned size = (unsigned)load_stack(f, 12);
         //int written_size = process_write(fd, buffer, size);
         putbuf (buffer, size);
         int written_size = size;
@@ -66,7 +69,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 
       case SYS_EXIT:
         //do exit;
-        handle_exit((int)load_stack((struct intr_frame*)p, 4));
+        handle_exit((int)load_stack(f, 4));
         break;
 
       case SYS_HALT:
