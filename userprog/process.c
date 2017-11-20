@@ -623,11 +623,11 @@ pass_args_to_stack(void **esp, char *arg_string, int argv, int arg_size)
         cur_arg_length = strlen(cur_arg) + 1;
         strlcpy(stack_ptr, cur_arg, cur_arg_length);
         //assign location of str to arg_pointers
-        printf("putting address %x at %x",stack_ptr, arg_pointers);
+        //printf("putting address %x at %x",stack_ptr, arg_pointers);
         *arg_pointers = stack_ptr;
         //increment by 4
         arg_pointers++;
-        printf("DEBUG:%d: %s\n",i,stack_ptr);
+        //printf("DEBUG:%d: %s\n",i,stack_ptr);
         stack_ptr += cur_arg_length;
 
     }
@@ -641,4 +641,3 @@ pass_args_to_stack(void **esp, char *arg_string, int argv, int arg_size)
 }
 
 //--------------------------------------------------------------------
-
