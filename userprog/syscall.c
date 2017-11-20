@@ -52,11 +52,8 @@ syscall_handler (struct intr_frame *f UNUSED)
     case SYS_WRITE:{
         //add by lsc working
         //printf("<2> In SYS_WRITE: %d\n", *p);
-        //int fd = *(int *)(f->esp +4);
         int fd = (int)load_stack(f, 4);
-        //void *buffer = *(char**)(f->esp + 8);
         void *buffer = (char*)load_stack(f, 8);
-        //unsigned size = *(unsigned *)(f->esp + 12);
         unsigned size = (unsigned)load_stack(f, 12);
         //int written_size = process_write(fd, buffer, size);
         putbuf (buffer, size);
