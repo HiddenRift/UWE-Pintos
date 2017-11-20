@@ -41,6 +41,10 @@ syscall_handler (struct intr_frame *f UNUSED)
         //do nothing;
     //    break;
 
+
+
+      //Alex Foulds
+      //Ends tasks and powers down Pintos
       case SYS_HALT:
         shutdown_power_off();
         break;
