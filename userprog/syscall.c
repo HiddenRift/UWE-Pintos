@@ -148,8 +148,8 @@ handle_read(int fd, void* buffer, unsigned size)
         for (i = 0; i < size; i++) {
             if (!put_user(buffer+i, input_getc()))
             {
-                // if put_user detects segfault  exit;
-                thread_exit();
+                // if put_user detects segfault  exit with exception;
+                handle_exit(-1);
                 break;
             }
         }
@@ -157,7 +157,7 @@ handle_read(int fd, void* buffer, unsigned size)
     }
     //TODO implement read from file
     printf("DEBUG:: Attempted reading from file(FD:%d)\n", fd);
-    thread_exit();
+    handle_exit(404);// 404 stuff not found
 
     //return -1 if file cannot be read for anything other than eof;
     return -1;
