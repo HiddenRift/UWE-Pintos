@@ -64,11 +64,6 @@ syscall_handler (struct intr_frame *f UNUSED)
         UNUSED int fd = (int)load_stack(f, 4);
         void *buffer = (char*)load_stack(f, 8);
         unsigned size = (unsigned)load_stack(f, 12);
-        //int written_size = process_write(fd, buffer, size);
-        /*
-        putbuf (buffer, size);
-        int written_size = size;
-        */
         f->eax = handle_write(fd, buffer, size);
         break;
     }
@@ -105,6 +100,7 @@ handle_write(int fd, char* buffer, unsigned size)
 void
 handle_exit(int status)
 {
-    //struct thread * current = thread_current();
+    struct thread *current = thread_current();
+    current->exit_status = status;
     thread_exit();
 }
