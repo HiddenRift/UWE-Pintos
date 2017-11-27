@@ -38,6 +38,10 @@ occurred. */
 static int
 get_user (const uint8_t *uaddr)
 {
+    if(!is_below_PHYS_BASE(uaddr))
+    {
+        return -1;
+    }
     int result;
     asm ("movl $1f, %0; movzbl %1, %0; 1:"
          : "=&a" (result) : "m" (*uaddr));
@@ -76,7 +80,7 @@ load_stack(struct intr_frame *f, int offset)
     // i.e. user can do bad things
     if(get_user (f->esp + offset) == -1)
     {
-        //TODO: pass in correct error
+        //printf("DEBUG:: loading stack with offset %d caused error :%x :\n", offset,  (unsigned)f->esp + offset);
         handle_exit(-1);
     }
     return *((uint32_t*)(f->esp + offset));
@@ -129,7 +133,7 @@ handle_write(int fd, char* buffer, unsigned size)
     }
     //TODO implement write to file
     printf("DEBUG:: Writing to files (FD:%d) not implemented yet\n",fd);
-    thread_exit();
+    handle_exit(-1);
     return 0;
 }
 
