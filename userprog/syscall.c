@@ -19,6 +19,7 @@ static uint32_t load_stack(struct intr_frame *f, int offset);
 
 // system call prototypes
 void handle_exit(int status);
+int handle_write(int fd, char* buffer, unsigned size);
 
 /*****Definitions****/
 void
@@ -64,9 +65,11 @@ syscall_handler (struct intr_frame *f UNUSED)
         void *buffer = (char*)load_stack(f, 8);
         unsigned size = (unsigned)load_stack(f, 12);
         //int written_size = process_write(fd, buffer, size);
+        /*
         putbuf (buffer, size);
         int written_size = size;
-        f->eax = written_size;
+        */
+        f->eax = handle_write(fd, buffer, size);
         break;
     }
     case SYS_EXIT:
@@ -85,7 +88,22 @@ syscall_handler (struct intr_frame *f UNUSED)
   }
 }
 
-void handle_exit(int status)
+int
+handle_write(int fd, char* buffer, unsigned size)
+{
+    if(fd == STDOUT_FILENO)
+    {
+        putbuf (buffer, size);
+        return size;
+    }
+    //TODO implement write to file
+    printf("DEBUG:: Writing to files (FD:%d) not implemented yet\n",fd);
+    thread_exit();
+    return 0;
+}
+
+void
+handle_exit(int status)
 {
     //struct thread * current = thread_current();
     thread_exit();
