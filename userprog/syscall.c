@@ -4,6 +4,7 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "devices/shutdown.h"
+#include "devices/input.h"
 
 /*****Defines*********/
 #define ARG_1 4
@@ -142,7 +143,17 @@ handle_read(int fd, void* buffer, unsigned size)
 {
     if(fd == STDIN_FILENO)
     {
-        printf("READ FROM KEYBOARD");
+        printf("DEBUG:: READING FROM KEYBOARD");
+        size_t i;
+        for (i = 0; i < size; i++) {
+            if (!put_user(buffer+i, input_getc()))
+            {
+                // if put_user detects segfault  exit;
+                thread_exit();
+                break;
+            }
+        }
+        return i;
     }
     //TODO implement read from file
     printf("DEBUG:: Attempted reading from file(FD:%d)\n", fd);
