@@ -143,7 +143,7 @@ handle_read(int fd, void* buffer, unsigned size)
 {
     if(fd == STDIN_FILENO)
     {
-        printf("DEBUG:: READING FROM KEYBOARD");
+        printf("DEBUG:: READING FROM KEYBOARD\n");
         size_t i;
         for (i = 0; i < size; i++) {
             if (!put_user(buffer+i, input_getc()))
