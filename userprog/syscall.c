@@ -5,6 +5,7 @@
 #include "threads/thread.h"
 #include "devices/shutdown.h"
 #include "devices/input.h"
+#include "threads/malloc.h"
 #include <hash.h>
 #include "filesys/file.h"
 #include "filesys/filesys.h"
@@ -32,7 +33,8 @@ int handle_read(int fd, void* buffer, unsigned size);
 bool file_list_uninitialised(struct hash *filesopen);
 unsigned file_link_hash(const struct hash_elem *i, void *aux UNUSED);
 bool page_less(const struct hash_elem *a1, const struct hash_elem *b1, void *aux UNUSED);
-bool initialise_file_hash(struct hash *filesopen);
+bool initialise_file_hash(struct hash **filesopen); //pass in by reference &
+struct file_link *fd_lookup(const int fd, struct hash *open_files);
 /*****Definitions****/
 void
 syscall_init (void)
@@ -120,10 +122,24 @@ page_less(const struct hash_elem *a1, const struct hash_elem *b1, void *aux UNUS
 }
 
 bool
-initialise_file_hash(struct hash *filesopen)
+initialise_file_hash(struct hash **filesopen)
 {
-    return hash_init (filesopen, file_link_hash, page_less, NULL);
+    struct hash *temp;
+    temp = malloc(sizeof(struct hash));
+    *filesopen = temp;
+    return hash_init (temp, file_link_hash, page_less, NULL);
 }
+
+struct file_link
+*fd_lookup(const int fd, struct hash *open_files)
+{
+    struct file_link tolookfor;
+    struct hash_elem *e;
+    tolookfor.fd = fd;
+    e = hash_find(open_files, &tolookfor.hash_elem);
+    return (e != NULL)?hash_entry(e,struct file_link, hash_elem) : NULL;
+}
+
 
 static void
 syscall_handler (struct intr_frame *f UNUSED)
@@ -204,6 +220,40 @@ void
 handle_exit(int status)
 {
     struct thread *current = thread_current();
+    //test hash
+    if(initialise_file_hash(&(current->files_open))){
+        printf("init retruned true\n");
+        // test insert
+        struct file_link *new, *new2;
+        new = malloc(sizeof(struct file_link));
+        new->fd = 2;
+        new->DEBUG = 'a';
+        hash_insert (current->files_open, &new->hash_elem);
+
+        new2 = malloc(sizeof(struct file_link));
+        new2->fd = 3;
+        new2->DEBUG = 'x';
+        hash_insert (current->files_open, &new2->hash_elem);
+
+        // now to find
+        struct file_link *result = fd_lookup(3, current->files_open);
+        if(result != NULL)
+        {
+            printf("%c\n",result->DEBUG);
+        }else{
+            printf("not found\n");
+        }
+        result = fd_lookup(2, current->files_open);
+        if(result != NULL)
+        {
+            printf("%c\n",result->DEBUG);
+        }else{
+            printf("not found\n");
+        }
+    }else{
+        printf("init retruned false\n");
+    }
+    //stop test
     current->exit_status = status;
     thread_exit();
 }
