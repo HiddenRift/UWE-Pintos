@@ -95,7 +95,7 @@ struct thread
     struct list_elem elem;              /* List element. */
     int exit_status;
     //for file handleing
-    struct hash files_open*
+    struct hash *files_open;
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
