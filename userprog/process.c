@@ -63,12 +63,6 @@ process_execute (const char *file_name)
   // dont worry array is 1 bigger to allow for this.S
   program_name[++name_len] = '\0';
 
-
-  //fn_copy += 5;
-
-
-  //Rob this is terrible
-
   printf("DEBUG:: %s\n",program_name);
 
   /* Create a new thread to execute FILE_NAME. */
