@@ -137,6 +137,13 @@ process_exit (void)
   pd = cur->pagedir;
   if (pd != NULL)
     {
+        if(cur->files_open == NULL)
+        {
+            printf("Filesopen, uninitialised1\n");
+        }else{
+            printf("filesopen not null\n");
+            // need to delete it
+        }
       /* Correct ordering here is crucial.  We must set
          cur->pagedir to NULL before switching page directories,
          so that a timer interrupt can't switch back to the
@@ -148,13 +155,6 @@ process_exit (void)
       pagedir_activate (NULL);
       pagedir_destroy (pd);
       printf("%s: exit(%d)\n",cur->name,cur->exit_status);
-      if(cur->files_open == NULL)
-      {
-          printf("Filesopen, uninitialised1\n");
-      }else{
-          printf("filesopen not null\n");
-          // need to delete it
-      }
     }
 }
 
