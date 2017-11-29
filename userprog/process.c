@@ -148,6 +148,13 @@ process_exit (void)
       pagedir_activate (NULL);
       pagedir_destroy (pd);
       printf("%s: exit(%d)\n",cur->name,cur->exit_status);
+      if(cur->files_open == NULL)
+      {
+          printf("Filesopen, uninitialised1\n");
+      }else{
+          printf("filesopen not null\n");
+          // need to delete it
+      }
     }
 }
 
