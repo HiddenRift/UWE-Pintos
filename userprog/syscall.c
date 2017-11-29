@@ -5,6 +5,9 @@
 #include "threads/thread.h"
 #include "devices/shutdown.h"
 #include "devices/input.h"
+#include <hash.h>
+#include "filesys/file.h"
+#include "filesys/filesys.h"
 
 /*****Defines*********/
 #define ARG_1 4
@@ -25,6 +28,11 @@ void handle_exit(int status);
 int handle_write(int fd, char* buffer, unsigned size);
 int handle_read(int fd, void* buffer, unsigned size);
 
+//file handleing prototypes
+bool file_list_uninitialised(struct hash *filesopen);
+unsigned file_link_hash(const struct hash_elem *i, void *aux UNUSED);
+bool page_less(const struct hash_elem *a1, const struct hash_elem *b1, void *aux UNUSED);
+bool initialise_file_hash(struct hash *filesopen);
 /*****Definitions****/
 void
 syscall_init (void)
@@ -87,6 +95,35 @@ load_stack(struct intr_frame *f, int offset)
     return *((uint32_t*)(f->esp + offset));
 }
 
+
+// file handling functions
+// returns true if file map is uninitialised
+bool
+file_list_uninitialised(struct hash *filesopen)
+{
+    return filesopen == NULL;
+}
+
+unsigned
+file_link_hash(const struct hash_elem *i, void *aux UNUSED)
+{
+    const struct file_link *p = hash_entry (i, struct file_link, hash_elem);
+    return hash_int(p->fd);
+}
+
+bool
+page_less(const struct hash_elem *a1, const struct hash_elem *b1, void *aux UNUSED)
+{
+    const struct file_link *a = hash_entry (a1, struct file_link, hash_elem);
+    const struct file_link *b = hash_entry (b1, struct file_link, hash_elem);
+    return a->fd < b->fd;
+}
+
+bool
+initialise_file_hash(struct hash *filesopen)
+{
+    return hash_init (filesopen, file_link_hash, page_less, NULL);
+}
 
 static void
 syscall_handler (struct intr_frame *f UNUSED)
