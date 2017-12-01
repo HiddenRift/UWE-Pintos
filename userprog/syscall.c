@@ -32,6 +32,7 @@ int handle_write(int fd, char* buffer, unsigned size);
 int handle_read(int fd, void* buffer, unsigned size);
 bool handle_create(const char* filename, unsigned initial_size);
 bool handle_remove (const char *filename);
+int handle_open (const char *file);
 
 //file handleing prototypes
 bool file_list_uninitialised(struct hash *filesopen);
@@ -222,6 +223,48 @@ syscall_handler (struct intr_frame *f UNUSED)
             break;
   }
 }
+
+
+int handle_open (const char *file)
+{
+    //validate filename
+    struct thread *current = thread_current();
+    if(!is_valid_filename(file))
+    {
+        return -1;
+    }
+    //find unnoccupied fd after 2
+    int fd = -1;
+    for (int potential_fd = 2; potential_fd > 1; potential_fd++)
+    {
+        if(fd_lookup(potential_fd, current->files_open) == NULL)
+        {
+            //potfd is free/
+            fd = potential_fd;
+        }
+    }
+    if(fd == -1)
+    {
+        // fd is unchanged so no fd was found
+        return -1;
+    }
+    struct file *opened_file = filesys_open (file);
+    if(opened_file == NULL)
+    {
+        // file cannot be opened
+        return -1;
+    }
+    if(insert_file_link(fd, opened_file) == false)
+    {
+        // memory allocation failed so tidy up after ourselves
+        file_close (opened_file);
+        return -1;
+    }
+    return fd;
+
+
+}
+
 
 bool
 handle_create(const char* filename, unsigned initial_size)
