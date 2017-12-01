@@ -24,12 +24,13 @@ static int get_user (const uint8_t *uaddr);
 static bool put_user (uint8_t *udst, uint8_t byte);
 static uint32_t load_stack(struct intr_frame *f, int offset);
 static bool is_below_PHYS_BASE(const uint8_t *uaddr);
-bool is_valid_filename(char *filename);
+bool is_valid_filename(const char *filename);
 
 // system call prototypes
 void handle_exit(int status);
 int handle_write(int fd, char* buffer, unsigned size);
 int handle_read(int fd, void* buffer, unsigned size);
+bool handle_create(const char* filename, unsigned initial_size);
 
 //file handleing prototypes
 bool file_list_uninitialised(struct hash *filesopen);
@@ -100,7 +101,7 @@ load_stack(struct intr_frame *f, int offset)
 }
 
 bool
-is_valid_filename(char *filename)
+is_valid_filename(const char *filename)
 {
     for (size_t i = 0; i < MAXFILENAME; i++)
     {
@@ -194,6 +195,9 @@ syscall_handler (struct intr_frame *f UNUSED)
     case SYS_READ:
         f->eax = handle_read((int)load_stack(f, 4), (char*)load_stack(f, 8), (unsigned)load_stack(f, 12));
         break;
+    case SYS_CREATE:
+        f->eax = handle_create((char*)load_stack(f, 4), (unsigned)load_stack(f, 8));
+        break;
 
     default:
             printf("Unhandled SYSCALL(%d)\n", *p);
@@ -201,6 +205,19 @@ syscall_handler (struct intr_frame *f UNUSED)
             break;
   }
 }
+
+bool
+handle_create(const char* filename, unsigned initial_size)
+{
+    if(!is_valid_filename(filename))
+    {
+        //invalid filename
+        return false;
+    }
+    //filename valid attempt filecreate / return val
+    return filesys_create (filename, initial_size);
+}
+
 
 int
 handle_write(int fd, char* buffer, unsigned size)
