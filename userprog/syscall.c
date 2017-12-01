@@ -248,6 +248,7 @@ int handle_open (const char *file)
         // fd is unchanged so no fd was found
         return -1;
     }
+    //TODO: ADD LOCK HERE
     struct file *opened_file = filesys_open (file);
     if(opened_file == NULL)
     {
@@ -260,6 +261,7 @@ int handle_open (const char *file)
         file_close (opened_file);
         return -1;
     }
+    //TODO: END LOCK HERE
     return fd;
 
 
