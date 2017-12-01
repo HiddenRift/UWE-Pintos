@@ -189,6 +189,15 @@ static void
 syscall_handler (struct intr_frame *f UNUSED)
 {
   //system calls go here
+  struct thread *current = thread_current();
+  // if files open unninitialised
+  if(current->files_open == NULL)
+  {
+      if(initialise_file_hash(&(current->files_open)) == false)
+        handle_exit(-1);
+  }
+
+
   uint32_t *p = f->esp;
   //printf ("DEBUG:: in system call: system call number: %d\n", *p);
 
@@ -340,8 +349,6 @@ handle_exit(int status)
 {
     struct thread *current = thread_current();
     //test hash
-    if(initialise_file_hash(&(current->files_open))){
-        printf("init retruned true\n");
         // test insert
         struct file_link *new, *new2;
         new = malloc(sizeof(struct file_link));
@@ -369,9 +376,6 @@ handle_exit(int status)
         }else{
             printf("not found\n");
         }
-    }else{
-        printf("init retruned false\n");
-    }
     //stop test
     current->exit_status = status;
     thread_exit();
