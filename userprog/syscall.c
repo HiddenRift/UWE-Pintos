@@ -14,6 +14,7 @@
 #define ARG_1 4
 #define ARG_2 8
 #define ARG_3 12
+#define MAXFILENAME 15
 
 /*****Prototypes******/
 static void syscall_handler (struct intr_frame *);
@@ -23,6 +24,7 @@ static int get_user (const uint8_t *uaddr);
 static bool put_user (uint8_t *udst, uint8_t byte);
 static uint32_t load_stack(struct intr_frame *f, int offset);
 static bool is_below_PHYS_BASE(const uint8_t *uaddr);
+bool is_valid_filename(char *filename);
 
 // system call prototypes
 void handle_exit(int status);
@@ -95,6 +97,29 @@ load_stack(struct intr_frame *f, int offset)
         handle_exit(-1);
     }
     return *((uint32_t*)(f->esp + offset));
+}
+
+bool
+is_valid_filename(char *filename)
+{
+    for (size_t i = 0; i < MAXFILENAME; i++)
+    {
+        if (get_user((uint8_t*)(filename+i)) != -1)
+        {
+            //test for /0 char;
+            if(*(filename+i) == '\0')
+            {
+                return true;
+            }
+        }
+        else
+        {
+            //segv occurred
+            return false;
+        }
+    }
+    //reached end of loop without null terminator
+    return false;
 }
 
 
