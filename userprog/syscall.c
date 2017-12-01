@@ -31,6 +31,7 @@ void handle_exit(int status);
 int handle_write(int fd, char* buffer, unsigned size);
 int handle_read(int fd, void* buffer, unsigned size);
 bool handle_create(const char* filename, unsigned initial_size);
+bool handle_remove (const char *filename);
 
 //file handleing prototypes
 bool file_list_uninitialised(struct hash *filesopen);
@@ -107,7 +108,7 @@ is_valid_filename(const char *filename)
     {
         if (get_user((uint8_t*)(filename+i)) != -1)
         {
-            //test for /0 char;
+            // no segv so test for /0 char;
             if(*(filename+i) == '\0')
             {
                 return true;
@@ -215,7 +216,18 @@ handle_create(const char* filename, unsigned initial_size)
         return false;
     }
     //filename valid attempt filecreate / return val
-    return filesys_create (filename, initial_size);
+    return filesys_create(filename, initial_size);
+}
+bool
+handle_remove (const char *filename)
+{
+    if(!is_valid_filename(filename))
+    {
+        //invalid filename
+        return false;
+    }
+    //filename valid attempt filecreate / return val
+    return filesys_remove(filename);
 }
 
 
