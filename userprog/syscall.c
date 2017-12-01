@@ -348,6 +348,7 @@ void
 handle_exit(int status)
 {
     struct thread *current = thread_current();
+    /*
     //test hash
         // test insert
         struct file_link *new, *new2;
@@ -377,6 +378,8 @@ handle_exit(int status)
             printf("not found\n");
         }
     //stop test
+    */
+    
     current->exit_status = status;
     thread_exit();
 }
