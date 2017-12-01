@@ -216,6 +216,10 @@ syscall_handler (struct intr_frame *f UNUSED)
     case SYS_CREATE:
         f->eax = handle_create((char*)load_stack(f, 4), (unsigned)load_stack(f, 8));
         break;
+    case SYS_OPEN:
+        f->eax = handle_open ((char*)load_stack(f, 4));
+        break;
+
 
     default:
             printf("Unhandled SYSCALL(%d)\n", *p);
