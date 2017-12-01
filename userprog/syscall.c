@@ -39,6 +39,7 @@ unsigned file_link_hash(const struct hash_elem *i, void *aux UNUSED);
 bool page_less(const struct hash_elem *a1, const struct hash_elem *b1, void *aux UNUSED);
 bool initialise_file_hash(struct hash **filesopen); //pass in by reference &
 struct file_link *fd_lookup(const int fd, struct hash *open_files);
+bool insert_file_link(const int fd, struct file *openedFile);
 /*****Definitions****/
 void
 syscall_init (void)
@@ -167,6 +168,21 @@ struct file_link
     return (e != NULL)?hash_entry(e,struct file_link, hash_elem) : NULL;
 }
 
+bool insert_file_link(const int fd, struct file *openedFile)
+{
+    struct thread *current = thread_current();
+    struct file_link *new;
+    new = malloc(sizeof(struct file_link));
+    if(new == NULL)
+    {
+        return false;
+    }
+    new->fd = fd;
+    new->fileinfo = openedFile;
+    hash_insert (current->files_open, &new->hash_elem);
+    return true;
+}
+
 
 static void
 syscall_handler (struct intr_frame *f UNUSED)
@@ -178,7 +194,7 @@ syscall_handler (struct intr_frame *f UNUSED)
   switch (*p) {
     case SYS_WRITE:{
         //printf("<2> In SYS_WRITE: %d\n", *p);
-        UNUSED int fd = (int)load_stack(f, 4);
+        int fd = (int)load_stack(f, 4);
         void *buffer = (char*)load_stack(f, 8);
         unsigned size = (unsigned)load_stack(f, 12);
         f->eax = handle_write(fd, buffer, size);
