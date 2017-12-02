@@ -229,6 +229,7 @@ syscall_handler (struct intr_frame *f UNUSED)
         f->eax = handle_write(fd, buffer, size);
         break;
     }
+
     case SYS_EXIT:
         //do exit;
         handle_exit((int)load_stack(f, 4));
@@ -241,18 +242,23 @@ syscall_handler (struct intr_frame *f UNUSED)
     case SYS_READ:
         f->eax = handle_read((int)load_stack(f, 4), (char*)load_stack(f, 8), (unsigned)load_stack(f, 12));
         break;
+
     case SYS_CREATE:
         f->eax = handle_create((char*)load_stack(f, 4), (unsigned)load_stack(f, 8));
         break;
+
     case SYS_OPEN:
         f->eax = handle_open ((char*)load_stack(f, 4));
         break;
+
     case SYS_CLOSE:
         handle_close((int)load_stack(f, 4));
         break;
+
     case SYS_FILESIZE:
         f->eax = handle_filesize((int)load_stack(f, 4));
         break;
+        
     case SYS_TELL:
         f->eax = handle_tell((unsigned)load_stack(f, 4));
         break;
