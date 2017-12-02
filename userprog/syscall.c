@@ -33,6 +33,7 @@ int handle_read(int fd, void* buffer, unsigned size);
 bool handle_create(const char* filename, unsigned initial_size);
 bool handle_remove (const char *filename);
 int handle_open (const char *file);
+void handle_close(const int fd);
 
 //file handleing prototypes
 bool file_list_uninitialised(struct hash *filesopen);
@@ -228,6 +229,9 @@ syscall_handler (struct intr_frame *f UNUSED)
     case SYS_OPEN:
         f->eax = handle_open ((char*)load_stack(f, 4));
         break;
+    case SYS_CLOSE:
+        handle_close((int)load_stack(f, 4));
+        break;
 
 
     default:
@@ -277,6 +281,26 @@ int handle_open (const char *file)
     //TODO: END LOCK HERE
     return fd;
 
+
+}
+
+
+void handle_close(const int fd)
+{
+    struct thread *current = thread_current();
+    struct file_link *file_link1 = fd_lookup(fd, current->files_open);
+    if(file_link1 != NULL)
+    {
+
+        //TODO: ADD LOCK HERE
+        //file is opened so close it
+        file_close (file_link1->fileinfo);
+        // now remove from hash;
+        hash_delete(current->files_open, &file_link1->hash_elem);
+        //TODO: RELEASE LOCK HERE
+        // and finally free filelink struct
+        free(file_link1);
+    }
 
 }
 
@@ -377,9 +401,10 @@ handle_exit(int status)
         }else{
             printf("not found\n");
         }
+        hash_delete(current->files_open, &new2->hash_elem);
     //stop test
     */
-    
+
     current->exit_status = status;
     thread_exit();
 }
