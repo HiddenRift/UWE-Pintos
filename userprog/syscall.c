@@ -25,6 +25,8 @@ static bool put_user (uint8_t *udst, uint8_t byte);
 static uint32_t load_stack(struct intr_frame *f, int offset);
 static bool is_below_PHYS_BASE(const uint8_t *uaddr);
 bool is_valid_filename(const char *filename);
+bool is_valid_buffer(const char *buffer, size_t size);
+
 
 // system call prototypes
 void handle_exit(int status);
@@ -125,6 +127,18 @@ is_valid_filename(const char *filename)
     }
     //reached end of loop without null terminator
     return false;
+}
+
+bool is_valid_buffer(const char *buffer, size_t size)
+{
+    for (size_t i = 0; i < size; i++)
+    {
+        if(get_user((uint8_t*)buffer+i) == -1)
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 
