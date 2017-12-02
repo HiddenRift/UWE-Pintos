@@ -38,7 +38,7 @@ int handle_open (const char *file);
 void handle_close(const int fd);
 int handle_filesize(const int fd);
 unsigned handle_tell(const int fd);
-
+void handle_seek(const int fd, unsigned position);
 
 //file handleing prototypes
 bool file_list_uninitialised(struct hash *filesopen);
@@ -258,7 +258,7 @@ syscall_handler (struct intr_frame *f UNUSED)
     case SYS_FILESIZE:
         f->eax = handle_filesize((int)load_stack(f, 4));
         break;
-        
+
     case SYS_TELL:
         f->eax = handle_tell((unsigned)load_stack(f, 4));
         break;
@@ -363,6 +363,30 @@ unsigned handle_tell(const int fd)
     unsigned return_val = (unsigned)file_tell(file_link1->fileinfo);
     //TODO: RELEASE LOCK HERE
     return return_val;
+}
+
+void handle_seek(const int fd, unsigned position)
+{
+    struct thread *current = thread_current();
+    struct file_link *file_link1 = fd_lookup(fd, current->files_open);
+    if (file_link1 == NULL)
+    {
+        // file isnt open// possibly kill process
+        handle_exit(-1);
+        return;
+    }
+    
+    if(position < (unsigned)file_length(file_link1->fileinfo))
+    {
+        // valid
+        file_seek(file_link1->fileinfo, position);
+    }
+    else
+    {
+        // position out of bounds
+        handle_exit(-1);
+    }
+    return;
 }
 
 
