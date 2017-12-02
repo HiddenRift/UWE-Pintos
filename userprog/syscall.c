@@ -346,6 +346,11 @@ handle_remove (const char *filename)
 int
 handle_write(int fd, char* buffer, unsigned size)
 {
+    if(!is_valid_buffer(buffer,size))
+    {
+        handle_exit(-1);
+        return 0;
+    }
     if(fd == STDOUT_FILENO)
     {
         putbuf (buffer, size);
