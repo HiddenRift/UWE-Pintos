@@ -36,6 +36,7 @@ bool handle_create(const char* filename, unsigned initial_size);
 bool handle_remove (const char *filename);
 int handle_open (const char *file);
 void handle_close(const int fd);
+int handle_filesize(const int fd);
 
 //file handleing prototypes
 bool file_list_uninitialised(struct hash *filesopen);
@@ -48,6 +49,7 @@ bool insert_file_link(const int fd, struct file *openedFile);
 void
 syscall_init (void)
 {
+  //printf("::DEBUG:: Executing SYSCALL_INIT\n");
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
@@ -246,7 +248,9 @@ syscall_handler (struct intr_frame *f UNUSED)
     case SYS_CLOSE:
         handle_close((int)load_stack(f, 4));
         break;
-
+    case SYS_FILESIZE:
+        f->eax = handle_filesize((int)load_stack(f, 4));
+        break;
 
     default:
             printf("Unhandled SYSCALL(%d)\n", *p);
@@ -316,6 +320,23 @@ void handle_close(const int fd)
         free(file_link1);
     }
 
+}
+
+
+int handle_filesize(const int fd)
+{
+    struct thread *current = thread_current();
+    struct file_link *file_link1 = fd_lookup(fd, current->files_open);
+    if (file_link1 == NULL)
+    {
+        // file isnt open// possibly kill process
+        return 0;
+    }
+    //file exists so try getting size
+    //TODO: ADD LOCK HERE
+    int return_val = (int)file_length (file_link1->fileinfo);
+    //TODO: RELEASE LOCK HERE
+    return return_val;
 }
 
 
