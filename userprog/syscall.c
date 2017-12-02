@@ -365,9 +365,14 @@ handle_write(int fd, char* buffer, unsigned size)
 int
 handle_read(int fd, void* buffer, unsigned size)
 {
+    if(!is_valid_buffer(buffer,size))
+    {
+        handle_exit(-1);
+        return 0;
+    }
     if(fd == STDIN_FILENO)
     {
-        printf("DEBUG:: READING FROM KEYBOARD\n");
+        //printf("DEBUG:: READING FROM KEYBOARD\n");
         size_t i;
         for (i = 0; i < size; i++) {
             if (!put_user(buffer+i, input_getc()))
