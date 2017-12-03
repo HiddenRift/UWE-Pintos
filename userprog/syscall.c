@@ -27,7 +27,6 @@ static bool is_below_PHYS_BASE(const uint8_t *uaddr);
 bool is_valid_filename(const char *filename);
 bool is_valid_buffer(const char *buffer, size_t size);
 
-
 // system call prototypes
 void handle_exit(int status);
 int handle_write(int fd, char* buffer, unsigned size);
@@ -249,6 +248,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 
     case SYS_OPEN:
         f->eax = handle_open ((char*)load_stack(f, 4));
+        //99ab2fc69ff4b6a4a18b282767230322a43d3e87
         break;
 
     case SYS_CLOSE:
@@ -263,12 +263,27 @@ syscall_handler (struct intr_frame *f UNUSED)
         f->eax = handle_tell((unsigned)load_stack(f, 4));
         break;
 
+    case SYS_REMOVE:
+        f->eax=handle_remove((char*)load_stack(f, 4));
+        break;
+
+    case SYS_SEEK:
+        handle_seek((int)load_stack(f, 4), (unsigned)load_stack(f, 8));
+        break;
+
+    case SYS_WAIT:
+        break;
+
+    case SYS_EXEC:
+        break;
+
     default:
             printf("Unhandled SYSCALL(%d)\n", *p);
             thread_exit ();
             break;
   }
 }
+
 
 
 int handle_open (const char *file)
@@ -375,7 +390,7 @@ void handle_seek(const int fd, unsigned position)
         handle_exit(-1);
         return;
     }
-    
+
     if(position < (unsigned)file_length(file_link1->fileinfo))
     {
         // valid
