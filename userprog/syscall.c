@@ -292,15 +292,15 @@ syscall_handler (struct intr_frame *f UNUSED)
         handle_seek((int)load_stack(f, 4), (unsigned)load_stack(f, 8));
         break;
 
-    case SYS_WAIT:
-        break;
+    //case SYS_WAIT:
+        //break;
 
-    case SYS_EXEC:
-        break;
+    //case SYS_EXEC:
+        //break;
 
     default:
             printf("Unhandled SYSCALL(%d)\n", *p);
-            thread_exit ();
+            handle_exit(-1);
             break;
   }
 }
@@ -465,10 +465,25 @@ handle_write(int fd, char* buffer, unsigned size)
         putbuf (buffer, size);
         return size;
     }
-    //TODO implement write to file
-    printf("DEBUG:: Writing to files (FD:%d) not implemented yet\n",fd);
+
+    //get file from fd and check if it exists
+    struct thread *current = thread_current();
+    struct file_link *file_link1 = fd_lookup(fd, current->files_open);
+    if (file_link1 == NULL)
+    {
+        // file isnt open// kill process
+        handle_exit(-1);
+        return 0;
+    }
+    //TODO: Add lock here
+    off_t bytes_written = file_write (file_link1->fileinfo, buffer, (off_t)size);
+    //TODO: release lock here
+
+    return bytes_written;
+    /*printf("DEBUG:: Writing to files (FD:%d) not implemented yet\n",fd);
     handle_exit(-1);
     return 0;
+    */
 }
 
 int
@@ -493,6 +508,23 @@ handle_read(int fd, void* buffer, unsigned size)
         }
         return i;
     }
+    //get file from fd and check if it exists
+    struct thread *current = thread_current();
+    struct file_link *file_link1 = fd_lookup(fd, current->files_open);
+    if (file_link1 == NULL)
+    {
+        // file isnt open// kill process
+        handle_exit(-1);
+        return 0;
+    }
+    //TODO: Add lock here
+    off_t bytes_written = file_read (file_link1->fileinfo, buffer, (off_t)size);
+    //TODO: release lock here
+
+    return bytes_written;
+
+
+
     //TODO implement read from file
     printf("DEBUG:: Attempted reading from file(FD:%d)\n", fd);
     handle_exit(404);// 404 stuff not found
