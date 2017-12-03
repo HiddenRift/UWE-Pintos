@@ -220,7 +220,9 @@ void
 deallocate_file_link(struct hash_elem *hashtodelete, void *aux UNUSED)
 {
     struct file_link *file_link1 = hash_entry(hashtodelete,struct file_link, hash_elem);
+    lock_acquire (&file_lock);
     file_close (file_link1->fileinfo);
+    lock_release (&file_lock);
     free(file_link1);
     return;
 }
