@@ -537,6 +537,11 @@ void
 handle_exit(int status)
 {
     struct thread *current = thread_current();
+    if (current->files_open != NULL)
+    {
+        // if filesopen is not null then empty it and deallocate memory
+        close_remaining_files();
+    }
     /*
     //test hash
         // test insert
