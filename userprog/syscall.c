@@ -46,6 +46,7 @@ bool page_less(const struct hash_elem *a1, const struct hash_elem *b1, void *aux
 bool initialise_file_hash(struct hash **filesopen); //pass in by reference &
 struct file_link *fd_lookup(const int fd, struct hash *open_files);
 bool insert_file_link(const int fd, struct file *openedFile);
+void deallocate_file_link(struct hash_elem *hashtodelete, void *aux UNUSED);
 /*****Definitions****/
 void
 syscall_init (void)
@@ -202,6 +203,12 @@ bool insert_file_link(const int fd, struct file *openedFile)
     return true;
 }
 
+void
+deallocate_file_link(struct hash_elem *hashtodelete, void *aux UNUSED)
+{
+    return;
+}
+
 
 static void
 syscall_handler (struct intr_frame *f UNUSED)
@@ -302,6 +309,8 @@ int handle_open (const char *file)
         {
             //potfd is free/
             fd = potential_fd;
+            //we can now break out of loop
+            break;
         }
     }
     if(fd == -1)
