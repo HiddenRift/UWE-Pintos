@@ -212,7 +212,14 @@ bool insert_file_link(const int fd, struct file *openedFile)
     }
     new->fd = fd;
     new->fileinfo = openedFile;
+
+    /*
+    lock is needed when inserting to hash as it performs no internal
+    synchronisation itself so needs assistance during inserts and deletions.
+    */
+    lock_acquire (&file_lock);
     hash_insert (current->files_open, &new->hash_elem);
+    lock_release (&file_lock);
     return true;
 }
 
@@ -345,23 +352,23 @@ int handle_open (const char *file)
         // fd is unchanged so no fd was found
         return -1;
     }
-    //TODO: ADD LOCK HERE
+    lock_acquire (&file_lock);
     struct file *opened_file = filesys_open (file);
     if(opened_file == NULL)
     {
-        // file cannot be opened
+        // file cannot be opened so release lock and return error val
+        lock_release (&file_lock);
         return -1;
     }
     if(insert_file_link(fd, opened_file) == false)
     {
-        // memory allocation failed so tidy up after ourselves
+        // memory allocation failed so tidy up after ourselves, release lock and return error val
         file_close (opened_file);
+        lock_release (&file_lock);
         return -1;
     }
-    //TODO: END LOCK HERE
+    lock_release (&file_lock);
     return fd;
-
-
 }
 
 
@@ -372,12 +379,12 @@ void handle_close(const int fd)
     if(file_link1 != NULL)
     {
 
-        //TODO: ADD LOCK HERE
+        lock_acquire (&file_lock);
         //file is opened so close it
         file_close (file_link1->fileinfo);
         // now remove from hash;
         hash_delete(current->files_open, &file_link1->hash_elem);
-        //TODO: RELEASE LOCK HERE
+        lock_release (&file_lock);
         // and finally free filelink struct
         free(file_link1);
     }
@@ -395,9 +402,9 @@ int handle_filesize(const int fd)
         return 0;
     }
     //file exists so try getting size
-    //TODO: ADD LOCK HERE
+    lock_acquire (&file_lock);
     int return_val = (int)file_length (file_link1->fileinfo);
-    //TODO: RELEASE LOCK HERE
+    lock_release (&file_lock);
     return return_val;
 }
 
@@ -410,9 +417,9 @@ unsigned handle_tell(const int fd)
         // file isnt open// possibly kill process
         return 0;
     }
-    //TODO: ADD LOCK HERE
+    lock_acquire (&file_lock);
     unsigned return_val = (unsigned)file_tell(file_link1->fileinfo);
-    //TODO: RELEASE LOCK HERE
+    lock_release (&file_lock);
     return return_val;
 }
 
@@ -430,7 +437,9 @@ void handle_seek(const int fd, unsigned position)
     if(position < (unsigned)file_length(file_link1->fileinfo))
     {
         // valid
+        lock_acquire (&file_lock);
         file_seek(file_link1->fileinfo, position);
+        lock_release (&file_lock);
     }
     else
     {
@@ -450,8 +459,13 @@ handle_create(const char* filename, unsigned initial_size)
         return false;
     }
     //filename valid attempt filecreate / return val
-    return filesys_create(filename, initial_size);
+    lock_acquire (&file_lock);
+    bool return_val = filesys_create(filename, initial_size);
+    lock_release (&file_lock);
+
+    return return_val;
 }
+
 bool
 handle_remove (const char *filename)
 {
@@ -460,8 +474,12 @@ handle_remove (const char *filename)
         //invalid filename
         return false;
     }
-    //filename valid attempt filecreate / return val
-    return filesys_remove(filename);
+    //filename valid attempt fileremove / return val
+    lock_acquire (&file_lock);
+    bool return_val = filesys_remove(filename);
+    lock_release (&file_lock);
+
+    return return_val;
 }
 
 
