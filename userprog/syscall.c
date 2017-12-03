@@ -40,6 +40,7 @@ unsigned handle_tell(const int fd);
 void handle_seek(const int fd, unsigned position);
 
 //file handleing prototypes
+void close_remaining_files(void);
 bool file_list_uninitialised(struct hash *filesopen);
 unsigned file_link_hash(const struct hash_elem *i, void *aux UNUSED);
 bool page_less(const struct hash_elem *a1, const struct hash_elem *b1, void *aux UNUSED);
@@ -47,6 +48,7 @@ bool initialise_file_hash(struct hash **filesopen); //pass in by reference &
 struct file_link *fd_lookup(const int fd, struct hash *open_files);
 bool insert_file_link(const int fd, struct file *openedFile);
 void deallocate_file_link(struct hash_elem *hashtodelete, void *aux UNUSED);
+
 /*****Definitions****/
 void
 syscall_init (void)
@@ -206,8 +208,20 @@ bool insert_file_link(const int fd, struct file *openedFile)
 void
 deallocate_file_link(struct hash_elem *hashtodelete, void *aux UNUSED)
 {
+    struct file_link *file_link1 = hash_entry(hashtodelete,struct file_link, hash_elem);
+    file_close (file_link1->fileinfo);
+    free(file_link1);
     return;
 }
+
+void
+close_remaining_files(void)
+{
+    struct thread *current = thread_current();
+    hash_destroy (current->files_open, deallocate_file_link);
+    free(current->files_open);
+}
+
 
 
 static void
