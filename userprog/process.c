@@ -63,12 +63,6 @@ process_execute (const char *file_name)
   // dont worry array is 1 bigger to allow for this.S
   program_name[++name_len] = '\0';
 
-
-  //fn_copy += 5;
-
-
-  //Rob this is terrible
-
   printf("DEBUG:: %s\n",program_name);
 
   /* Create a new thread to execute FILE_NAME. */
@@ -143,6 +137,13 @@ process_exit (void)
   pd = cur->pagedir;
   if (pd != NULL)
     {
+        if(cur->files_open == NULL)
+        {
+            printf("Filesopen, uninitialised1\n");
+        }else{
+            printf("filesopen not null\n");
+            // need to delete it
+        }
       /* Correct ordering here is crucial.  We must set
          cur->pagedir to NULL before switching page directories,
          so that a timer interrupt can't switch back to the
@@ -153,7 +154,7 @@ process_exit (void)
       cur->pagedir = NULL;
       pagedir_activate (NULL);
       pagedir_destroy (pd);
-      printf("%s: exit(%d)\n",cur->name,0);
+      printf("%s: exit(%d)\n",cur->name,cur->exit_status);
     }
 }
 
@@ -623,11 +624,11 @@ pass_args_to_stack(void **esp, char *arg_string, int argv, int arg_size)
         cur_arg_length = strlen(cur_arg) + 1;
         strlcpy(stack_ptr, cur_arg, cur_arg_length);
         //assign location of str to arg_pointers
-        printf("putting address %x at %x",stack_ptr, arg_pointers);
+        //printf("putting address %x at %x",stack_ptr, arg_pointers);
         *arg_pointers = stack_ptr;
         //increment by 4
         arg_pointers++;
-        printf("DEBUG:%d: %s\n",i,stack_ptr);
+        //printf("DEBUG:%d: %s\n",i,stack_ptr);
         stack_ptr += cur_arg_length;
 
     }
@@ -641,4 +642,3 @@ pass_args_to_stack(void **esp, char *arg_string, int argv, int arg_size)
 }
 
 //--------------------------------------------------------------------
-
