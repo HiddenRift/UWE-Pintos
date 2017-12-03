@@ -242,21 +242,13 @@ syscall_handler (struct intr_frame *f UNUSED)
         f->eax = handle_read((int)load_stack(f, 4), (char*)load_stack(f, 8), (unsigned)load_stack(f, 12));
         break;
 
-<<<<<<< HEAD
-
-
-      //Alex Foulds
-      //Ends tasks and powers down Pintos
-      case SYS_HALT:
-        shutdown_power_off();
-=======
     case SYS_CREATE:
         f->eax = handle_create((char*)load_stack(f, 4), (unsigned)load_stack(f, 8));
         break;
 
     case SYS_OPEN:
         f->eax = handle_open ((char*)load_stack(f, 4));
->>>>>>> 99ab2fc69ff4b6a4a18b282767230322a43d3e87
+        //99ab2fc69ff4b6a4a18b282767230322a43d3e87
         break;
 
     case SYS_CLOSE:
@@ -271,12 +263,27 @@ syscall_handler (struct intr_frame *f UNUSED)
         f->eax = handle_tell((unsigned)load_stack(f, 4));
         break;
 
+    case SYS_REMOVE:
+        f->eax=handle_remove((char*)load_stack(f, 4));
+        break;
+
+    case SYS_SEEK:
+        handle_seek((int)load_stack(f, 4), (unsigned)load_stack(f, 8));
+        break;
+
+    case SYS_WAIT:
+        break;
+
+    case SYS_EXEC:
+        break;
+
     default:
             printf("Unhandled SYSCALL(%d)\n", *p);
             thread_exit ();
             break;
   }
 }
+
 
 
 int handle_open (const char *file)
@@ -383,7 +390,7 @@ void handle_seek(const int fd, unsigned position)
         handle_exit(-1);
         return;
     }
-    
+
     if(position < (unsigned)file_length(file_link1->fileinfo))
     {
         // valid
