@@ -486,15 +486,11 @@ handle_write(int fd, char* buffer, unsigned size)
         handle_exit(-1);
         return 0;
     }
-    //TODO: Add lock here
+    lock_acquire (&file_lock);
     off_t bytes_written = file_write (file_link1->fileinfo, buffer, (off_t)size);
-    //TODO: release lock here
+    lock_release (&file_lock);
 
     return bytes_written;
-    /*printf("DEBUG:: Writing to files (FD:%d) not implemented yet\n",fd);
-    handle_exit(-1);
-    return 0;
-    */
 }
 
 int
@@ -528,20 +524,11 @@ handle_read(int fd, void* buffer, unsigned size)
         handle_exit(-1);
         return 0;
     }
-    //TODO: Add lock here
+    lock_acquire (&file_lock);
     off_t bytes_written = file_read (file_link1->fileinfo, buffer, (off_t)size);
-    //TODO: release lock here
+    lock_release (&file_lock);
 
     return bytes_written;
-
-
-
-    //TODO implement read from file
-    printf("DEBUG:: Attempted reading from file(FD:%d)\n", fd);
-    handle_exit(404);// 404 stuff not found
-
-    //return -1 if file cannot be read for anything other than eof;
-    return -1;
 }
 
 void
