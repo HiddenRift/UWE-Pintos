@@ -27,7 +27,6 @@ static bool is_below_PHYS_BASE(const uint8_t *uaddr);
 bool is_valid_filename(const char *filename);
 bool is_valid_buffer(const char *buffer, size_t size);
 
-
 // system call prototypes
 void handle_exit(int status);
 int handle_write(int fd, char* buffer, unsigned size);
