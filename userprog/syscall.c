@@ -3,6 +3,7 @@
 #include <syscall-nr.h>
 #include "threads/interrupt.h"
 #include "threads/thread.h"
+#include "threads/synch.h"
 #include "devices/shutdown.h"
 #include "devices/input.h"
 #include "threads/malloc.h"
@@ -49,11 +50,21 @@ struct file_link *fd_lookup(const int fd, struct hash *open_files);
 bool insert_file_link(const int fd, struct file *openedFile);
 void deallocate_file_link(struct hash_elem *hashtodelete, void *aux UNUSED);
 
+// File lock used to maintain sync when accessing the filesystem
+static struct lock file_lock;
+/*
+use following to aquire lock for a thread:
+lock_acquire (&file_lock);
+and the following to remove a threads lock:
+lock_release (&file_lock);
+*/
+
 /*****Definitions****/
 void
 syscall_init (void)
 {
   //printf("::DEBUG:: Executing SYSCALL_INIT\n");
+  lock_init (&file_lock);
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
