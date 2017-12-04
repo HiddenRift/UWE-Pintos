@@ -51,12 +51,13 @@ bool insert_file_link(const int fd, struct file *openedFile);
 void deallocate_file_link(struct hash_elem *hashtodelete, void *aux UNUSED);
 
 // File lock used to maintain sync when accessing the filesystem
-static struct lock file_lock;
+static struct semaphore file_lock;
+
 /*
 use following to aquire lock for a thread:
-lock_acquire (&file_lock);
+sema_down (&file_lock);
 and the following to remove a threads lock:
-lock_release (&file_lock);
+sema_up (&file_lock);
 */
 
 /*****Definitions****/
@@ -64,7 +65,7 @@ void
 syscall_init (void)
 {
   //printf("::DEBUG:: Executing SYSCALL_INIT\n");
-  lock_init (&file_lock);
+  sema_init (&file_lock, 1);
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
@@ -217,9 +218,9 @@ bool insert_file_link(const int fd, struct file *openedFile)
     lock is needed when inserting to hash as it performs no internal
     synchronisation itself so needs assistance during inserts and deletions.
     */
-    lock_acquire (&file_lock);
+    sema_down (&file_lock);
     hash_insert (current->files_open, &new->hash_elem);
-    lock_release (&file_lock);
+    sema_up (&file_lock);
     return true;
 }
 
@@ -227,9 +228,9 @@ void
 deallocate_file_link(struct hash_elem *hashtodelete, void *aux UNUSED)
 {
     struct file_link *file_link1 = hash_entry(hashtodelete,struct file_link, hash_elem);
-    lock_acquire (&file_lock);
+    sema_down (&file_lock);
     file_close (file_link1->fileinfo);
-    lock_release (&file_lock);
+    sema_up (&file_lock);
     free(file_link1);
     return;
 }
@@ -324,6 +325,7 @@ syscall_handler (struct intr_frame *f)
 
 int handle_open (const char *file)
 {
+    printf("executing open\n");
     //validate filename
     struct thread *current = thread_current();
     if(!is_valid_filename(file))
@@ -347,39 +349,41 @@ int handle_open (const char *file)
         // fd is unchanged so no fd was found
         return -1;
     }
-    lock_acquire (&file_lock);
+    sema_down (&file_lock);
     struct file *opened_file = filesys_open (file);
+    sema_up (&file_lock);
     if(opened_file == NULL)
     {
         // file cannot be opened so release lock and return error val
-        lock_release (&file_lock);
         return -1;
     }
     if(insert_file_link(fd, opened_file) == false)
     {
         // memory allocation failed so tidy up after ourselves, release lock and return error val
+        sema_down (&file_lock);
         file_close (opened_file);
-        lock_release (&file_lock);
+        sema_up (&file_lock);
         return -1;
     }
-    lock_release (&file_lock);
+
     return fd;
 }
 
 
 void handle_close(const int fd)
 {
+    printf("executing handle_close\n");
     struct thread *current = thread_current();
     struct file_link *file_link1 = fd_lookup(fd, current->files_open);
     if(file_link1 != NULL)
     {
 
-        lock_acquire (&file_lock);
+        sema_down (&file_lock);
         //file is opened so close it
         file_close (file_link1->fileinfo);
         // now remove from hash;
         hash_delete(current->files_open, &file_link1->hash_elem);
-        lock_release (&file_lock);
+        sema_up (&file_lock);
         // and finally free filelink struct
         free(file_link1);
     }
@@ -389,6 +393,8 @@ void handle_close(const int fd)
 
 int handle_filesize(const int fd)
 {
+    printf("executing handle_filesize\n");
+
     struct thread *current = thread_current();
     struct file_link *file_link1 =fd_lookup(fd, current->files_open);
     if (file_link1 == NULL)
@@ -397,14 +403,15 @@ int handle_filesize(const int fd)
         return 0;
     }
     //file exists so try getting size
-    lock_acquire (&file_lock);
+    sema_down (&file_lock);
     int return_val = (int)file_length (file_link1->fileinfo);
-    lock_release (&file_lock);
+    sema_up (&file_lock);
     return return_val;
 }
 
 unsigned handle_tell(const int fd)
 {
+    printf("executing handle tell\n");
     struct thread *current = thread_current();
     struct file_link *file_link1 = fd_lookup(fd, current->files_open);
     if (file_link1 == NULL)
@@ -412,14 +419,15 @@ unsigned handle_tell(const int fd)
         // file isnt open// possibly kill process
         return 0;
     }
-    lock_acquire (&file_lock);
+    sema_down (&file_lock);
     unsigned return_val = (unsigned)file_tell(file_link1->fileinfo);
-    lock_release (&file_lock);
+    sema_up (&file_lock);
     return return_val;
 }
 
 void handle_seek(const int fd, unsigned position)
 {
+    printf("executing handle seek\n");
     struct thread *current = thread_current();
     struct file_link *file_link1 = fd_lookup(fd, current->files_open);
     if (file_link1 == NULL)
@@ -432,9 +440,9 @@ void handle_seek(const int fd, unsigned position)
     if(position < (unsigned)file_length(file_link1->fileinfo))
     {
         // valid
-        lock_acquire (&file_lock);
+        sema_down (&file_lock);
         file_seek(file_link1->fileinfo, position);
-        lock_release (&file_lock);
+        sema_up (&file_lock);
     }
     else
     {
@@ -448,15 +456,16 @@ void handle_seek(const int fd, unsigned position)
 bool
 handle_create(const char* filename, unsigned initial_size)
 {
+    printf("executing handle create\n");
     if(!is_valid_filename(filename))
     {
         //invalid filename
         return false;
     }
     //filename valid attempt filecreate / return val
-    lock_acquire (&file_lock);
+    sema_down (&file_lock);
     bool return_val = filesys_create(filename, initial_size);
-    lock_release (&file_lock);
+    sema_up (&file_lock);
 
     return return_val;
 }
@@ -464,15 +473,16 @@ handle_create(const char* filename, unsigned initial_size)
 bool
 handle_remove (const char *filename)
 {
+    printf("executing handle remove\n");
     if(!is_valid_filename(filename))
     {
         //invalid filename
         return false;
     }
     //filename valid attempt fileremove / return val
-    lock_acquire (&file_lock);
+    sema_down (&file_lock);
     bool return_val = filesys_remove(filename);
-    lock_release (&file_lock);
+    sema_up (&file_lock);
 
     return return_val;
 }
@@ -481,6 +491,7 @@ handle_remove (const char *filename)
 int
 handle_write(int fd, char* buffer, unsigned size)
 {
+    printf("executing handle write\n");
     /*  if buffer is invalid or attempting write to
         stdin Kill process */
     if(!is_valid_buffer(buffer,size) || fd == STDIN_FILENO)
@@ -503,9 +514,9 @@ handle_write(int fd, char* buffer, unsigned size)
         handle_exit(-1);
         return 0;
     }
-    lock_acquire (&file_lock);
+    sema_down (&file_lock);
     off_t bytes_written = file_write (file_link1->fileinfo, buffer, (off_t)size);
-    lock_release (&file_lock);
+    sema_up (&file_lock);
 
     return bytes_written;
 }
@@ -513,6 +524,7 @@ handle_write(int fd, char* buffer, unsigned size)
 int
 handle_read(int fd, void* buffer, unsigned size)
 {
+    printf("executing handle read\n");
     /*  if buffer is invalid or attempting read from
         stdout Kill process */
     if(!is_valid_buffer(buffer,size) || fd == STDOUT_FILENO)
@@ -543,9 +555,9 @@ handle_read(int fd, void* buffer, unsigned size)
         handle_exit(-1);
         return 0;
     }
-    lock_acquire (&file_lock);
+    sema_down (&file_lock);
     off_t bytes_written = file_read (file_link1->fileinfo, buffer, (off_t)size);
-    lock_release (&file_lock);
+    sema_up (&file_lock);
 
     return bytes_written;
 }
@@ -553,6 +565,7 @@ handle_read(int fd, void* buffer, unsigned size)
 void
 handle_exit(int status)
 {
+    printf("executing handle exit\n");
     struct thread *current = thread_current();
     if (current->files_open != NULL)
     {
