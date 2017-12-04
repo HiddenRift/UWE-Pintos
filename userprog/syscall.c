@@ -261,14 +261,9 @@ syscall_handler (struct intr_frame *f UNUSED)
   //printf ("DEBUG:: in system call: system call number: %d\n", *p);
 
   switch (*p) {
-    case SYS_WRITE:{
-        //printf("<2> In SYS_WRITE: %d\n", *p);
-        int fd = (int)load_stack(f, 4);
-        void *buffer = (char*)load_stack(f, 8);
-        unsigned size = (unsigned)load_stack(f, 12);
-        f->eax = handle_write(fd, buffer, size);
+    case SYS_WRITE:
+        f->eax = handle_write((int)load_stack(f, 4), (char*)load_stack(f, 8), (unsigned)load_stack(f, 12));
         break;
-    }
 
     case SYS_EXIT:
         //do exit;
