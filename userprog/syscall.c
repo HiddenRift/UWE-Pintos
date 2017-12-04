@@ -12,9 +12,9 @@
 #include "filesys/filesys.h"
 
 /*****Defines*********/
-#define ARG_1 4
-#define ARG_2 8
-#define ARG_3 12
+#define SYSCALLARG1 4
+#define SYSCALLARG2 8
+#define SYSCALLARG3 12
 #define MAXFILENAME 15
 
 /*****Prototypes******/
@@ -245,7 +245,7 @@ close_remaining_files(void)
 
 
 static void
-syscall_handler (struct intr_frame *f UNUSED)
+syscall_handler (struct intr_frame *f)
 {
   //system calls go here
   struct thread *current = thread_current();
@@ -262,12 +262,12 @@ syscall_handler (struct intr_frame *f UNUSED)
 
   switch (*p) {
     case SYS_WRITE:
-        f->eax = handle_write((int)load_stack(f, 4), (char*)load_stack(f, 8), (unsigned)load_stack(f, 12));
+        f->eax = handle_write((int)load_stack(f, SYSCALLARG1), (char*)load_stack(f, SYSCALLARG2), (unsigned)load_stack(f, SYSCALLARG3));
         break;
 
     case SYS_EXIT:
         //do exit;
-        handle_exit((int)load_stack(f, 4));
+        handle_exit((int)load_stack(f, SYSCALLARG1));
         break;
 
     case SYS_HALT:
@@ -275,36 +275,36 @@ syscall_handler (struct intr_frame *f UNUSED)
         break;
 
     case SYS_READ:
-        f->eax = handle_read((int)load_stack(f, 4), (char*)load_stack(f, 8), (unsigned)load_stack(f, 12));
+        f->eax = handle_read((int)load_stack(f, SYSCALLARG1), (char*)load_stack(f, SYSCALLARG2), (unsigned)load_stack(f, SYSCALLARG3));
         break;
 
     case SYS_CREATE:
-        f->eax = handle_create((char*)load_stack(f, 4), (unsigned)load_stack(f, 8));
+        f->eax = handle_create((char*)load_stack(f, SYSCALLARG1), (unsigned)load_stack(f, SYSCALLARG2));
         break;
 
     case SYS_OPEN:
-        f->eax = handle_open ((char*)load_stack(f, 4));
+        f->eax = handle_open ((char*)load_stack(f, SYSCALLARG1));
         //99ab2fc69ff4b6a4a18b282767230322a43d3e87
         break;
 
     case SYS_CLOSE:
-        handle_close((int)load_stack(f, 4));
+        handle_close((int)load_stack(f, SYSCALLARG1));
         break;
 
     case SYS_FILESIZE:
-        f->eax = handle_filesize((int)load_stack(f, 4));
+        f->eax = handle_filesize((int)load_stack(f, SYSCALLARG1));
         break;
 
     case SYS_TELL:
-        f->eax = handle_tell((unsigned)load_stack(f, 4));
+        f->eax = handle_tell((unsigned)load_stack(f, SYSCALLARG1));
         break;
 
     case SYS_REMOVE:
-        f->eax=handle_remove((char*)load_stack(f, 4));
+        f->eax=handle_remove((char*)load_stack(f, SYSCALLARG1));
         break;
 
     case SYS_SEEK:
-        handle_seek((int)load_stack(f, 4), (unsigned)load_stack(f, 8));
+        handle_seek((int)load_stack(f, SYSCALLARG1), (unsigned)load_stack(f, SYSCALLARG2));
         break;
 
     //case SYS_WAIT:

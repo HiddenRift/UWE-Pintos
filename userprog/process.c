@@ -63,7 +63,7 @@ process_execute (const char *file_name)
   // dont worry array is 1 bigger to allow for this.S
   program_name[++name_len] = '\0';
 
-  printf("DEBUG:: %s\n",program_name);
+  //printf("DEBUG:: %s\n",program_name);
 
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (program_name, PRI_DEFAULT, start_process, fn_copy);
@@ -137,13 +137,6 @@ process_exit (void)
   pd = cur->pagedir;
   if (pd != NULL)
     {
-        if(cur->files_open == NULL)
-        {
-            printf("Filesopen, uninitialised1\n");
-        }else{
-            printf("filesopen not null\n");
-            // need to delete it
-        }
       /* Correct ordering here is crucial.  We must set
          cur->pagedir to NULL before switching page directories,
          so that a timer interrupt can't switch back to the
@@ -535,6 +528,9 @@ install_page (void *upage, void *kpage, bool writable)
           && pagedir_set_page (t->pagedir, upage, kpage, writable));
 }
 
+/*  Counts the number of arguments to be placed onto the stack
+    and their total size. the total size is returned normally however
+    the argc value is returned by reference */
 int
 parse_arg_string(const char *arg_string, int *argv)
 {
@@ -548,7 +544,6 @@ parse_arg_string(const char *arg_string, int *argv)
 
     for (i = 0; arg_string[i] != '\0'; i++)
     {
-        /* code */
         if(arg_string[i] != ' ')
         {
             if(newarg == 1)
@@ -576,7 +571,7 @@ parse_arg_string(const char *arg_string, int *argv)
         decby++;
     }
     // debug
-    printf("::DEBUG:: argv: %d, length: %d\n", argv_tmp, decby);
+    //printf("::DEBUG:: argv: %d, length: %d\n", argv_tmp, decby);
     // assign
     *argv = argv_tmp;
     return decby;
@@ -606,7 +601,7 @@ pass_args_to_stack(void **esp, char *arg_string, int argv, int arg_size)
     argc_init_ptr -= 1;
     *argc_init_ptr = 0; // return address
     // decrement arg pointer by (argv + 1) * 4(32 bits)
-    //arg_pointers -= (argv + 1) * 4; // old bug
+
     // cur arg to hold ptr to cur string from strtok;
     char *cur_arg;
     //cur_arg len to hold the length of str cur_arg points to
@@ -635,8 +630,8 @@ pass_args_to_stack(void **esp, char *arg_string, int argv, int arg_size)
     //insert null pointer
     *arg_pointers = 0;
 
+    //hex_dump ((uintptr_t) argc_init_ptr, argc_init_ptr ,104, true);
     // update stack pointer and return
-    hex_dump ((uintptr_t) argc_init_ptr, argc_init_ptr ,104, true);
     *esp = argc_init_ptr;
     return 1;
 }
