@@ -481,7 +481,9 @@ handle_remove (const char *filename)
 int
 handle_write(int fd, char* buffer, unsigned size)
 {
-    if(!is_valid_buffer(buffer,size))
+    /*  if buffer is invalid or attempting write to
+        stdin Kill process */
+    if(!is_valid_buffer(buffer,size) || fd == STDIN_FILENO)
     {
         handle_exit(-1);
         return 0;
@@ -511,7 +513,9 @@ handle_write(int fd, char* buffer, unsigned size)
 int
 handle_read(int fd, void* buffer, unsigned size)
 {
-    if(!is_valid_buffer(buffer,size))
+    /*  if buffer is invalid or attempting read from
+        stdout Kill process */
+    if(!is_valid_buffer(buffer,size) || fd == STDOUT_FILENO)
     {
         handle_exit(-1);
         return 0;
