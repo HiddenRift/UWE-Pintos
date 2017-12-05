@@ -66,3 +66,5 @@ examples/recursor\.o
 examples/rm\.o
 
 examples/shell\.o
+
+tests/userprog/close-normal\.result
