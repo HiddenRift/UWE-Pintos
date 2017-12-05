@@ -373,6 +373,10 @@ int handle_open (const char *file)
 void handle_close(const int fd)
 {
     printf("executing handle_close\n");
+    if (fd == STDIN_FILENO || fd == STDOUT_FILENO)
+    {
+        handle_exit(-1);
+    }
     struct thread *current = thread_current();
     struct file_link *file_link1 = fd_lookup(fd, current->files_open);
     if(file_link1 != NULL)
