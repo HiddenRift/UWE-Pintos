@@ -206,6 +206,9 @@ initialise_file_hash(struct hash **filesopen)
     return hash_init (temp, file_link_hash, page_less, NULL);
 }
 
+/*  searches for fd in open files hash, returns null if
+    one does not exist or a pointer to the file_link struct
+    if it does */
 struct file_link
 *fd_lookup(const int fd, struct hash *open_files)
 {
@@ -216,6 +219,12 @@ struct file_link
     return (e != NULL)?hash_entry(e,struct file_link, hash_elem) : NULL;
 }
 
+
+/*  tries to create a new file_link, does not check whether a
+    link with fd already exists so this needs to be done via fd
+    lookup. Returns true if memory could be allocated for
+    the struct else false if this is the reason a new file could
+    not be added */
 bool insert_file_link(const int fd, struct file *openedFile)
 {
     struct thread *current = thread_current();
@@ -228,10 +237,8 @@ bool insert_file_link(const int fd, struct file *openedFile)
     new->fd = fd;
     new->fileinfo = openedFile;
 
-    /*
-    lock is needed when inserting to hash as it performs no internal
-    synchronisation itself so needs assistance during inserts and deletions.
-    */
+    /*  lock is needed when inserting to hash as it performs no internal
+        synchronisation itself so needs assistance during inserts and deletions. */
     sema_down (&file_lock);
     hash_insert (current->files_open, &new->hash_elem);
     sema_up (&file_lock);
@@ -256,8 +263,6 @@ close_remaining_files(void)
     hash_destroy (current->files_open, deallocate_file_link);
     free(current->files_open);
 }
-
-
 
 static void
 syscall_handler (struct intr_frame *f)
