@@ -32,15 +32,12 @@ tid_t
 process_execute (const char *file_name)
 {
   char *fn_copy;
-  //old parsed file name
-  //char *program_name; // the parsed file name
   tid_t tid;
   size_t name_len; // used to increment through arr
 
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
   fn_copy = palloc_get_page (0);
-  //program_name = palloc_get_page(0);
   char program_name[MAXFILENAMELEN + 1];
 
   if (fn_copy == NULL)
@@ -59,8 +56,8 @@ process_execute (const char *file_name)
       program_name[name_len] = file_name[name_len];
   }
 
-  // in case no delimiter found, append one to end.
-  // dont worry array is 1 bigger to allow for this.S
+  /*    in case no delimiter found, append one to end.
+        dont worry array is 1 bigger to allow for this.*/
   program_name[++name_len] = '\0';
 
   //printf("DEBUG:: %s\n",program_name);
@@ -237,7 +234,7 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
                           bool writable);
 
 
-int pass_args_to_stack(void **esp, char *arg_string, int argv, int arg_size);
+int pass_args_to_stack(void **esp, char *arg_string, size_t argv, int arg_size);
 int parse_arg_string(const char *arg_string, int *argv);
 /* Loads an ELF executable from FILE_NAME into the current thread.
    Stores the executable's entry point into *EIP
@@ -265,7 +262,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
     goto done;
   process_activate ();
 
-  // parse file name out
+  /* parse file name out */
   for(name_len = 0;name_len < MAXFILENAMELEN;name_len++){
       if(file_name[name_len] == ' ')
       {
@@ -274,8 +271,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
       }
       program_name[name_len] = file_name[name_len];
   }
-  // in case no delimiter found, append one to end.
-  // dont worry array is 1 bigger to allow for this.S
+  /* in case no delimiter found, append one to end.
+     dont worry array is 1 bigger to allow for this. */
   program_name[++name_len] = '\0';
 
   /* Open executable file. */
@@ -565,49 +562,58 @@ parse_arg_string(const char *arg_string, int *argv)
         }
     }
 
-    // if string ends with space then it will count otherwise add one more to make room for null term
+    /*  if string ends with space then it will count otherwise
+        add one more to make room for null terminator */
     if(arg_string[i - 1] != ' ')
     {
         decby++;
     }
-    // debug
+    /* debug to check whether values are correct */
     //printf("::DEBUG:: argv: %d, length: %d\n", argv_tmp, decby);
-    // assign
+
     *argv = argv_tmp;
     return decby;
 }
 
 int
-pass_args_to_stack(void **esp, char *arg_string, int argv, int arg_size)
+pass_args_to_stack(void **esp, char *arg_string, size_t argv, int arg_size)
 {
-    // to store strtok r position
+    /* to store strtok_r position */
     char *strtok_save;
-    // create stack pointer local
+    /* dereference esp to local pointer */
     char *stack_ptr = *esp;
-    // decrement pointer
+    /* decrement pointer by arg_size to allow for
+       arguments to be pushed on the stack */
     stack_ptr -= arg_size;
-    //create pointer to argv  but first align to nearest 32 bit
-    uint32_t *arg_pointers = stack_ptr - ((uint32_t)stack_ptr % 4);
-    //if (arg_size %4)
-      //*arg_pointers = stack-ptr - (4 - (arg_size %4))
-    // create base pointer
+    /* perform byte alignment */
+    uint32_t *arg_pointers = (uint32_t*)stack_ptr - ((uint32_t)stack_ptr % 4);
+    /*
+    if (arg_size %4)
+      *arg_pointers = stack-ptr - (4 - (arg_size %4)); */
+    /* create base pointer to argc[0] */
     arg_pointers -= (argv + 1);
-    // and set to point to initial value of arg pointers
-    uint32_t *argc_init_ptr = arg_pointers;
+    /* and set to point to initial value of arg pointers
+       including argc** argv and finally the return address */
+    uint32_t *argc_init_ptr = (uint32_t*)arg_pointers;
     argc_init_ptr -= 1;
-    *argc_init_ptr = arg_pointers;
+    *argc_init_ptr = (uint32_t)arg_pointers;
     argc_init_ptr -= 1;
     *argc_init_ptr = argv;
     argc_init_ptr -= 1;
-    *argc_init_ptr = 0; // return address
-    // decrement arg pointer by (argv + 1) * 4(32 bits)
+    *argc_init_ptr = 0;
 
-    // cur arg to hold ptr to cur string from strtok;
+    /* cur arg to hold ptr to current argument
+       string from strtok
+       cur_arg_length holds length of current argument string
+       including the null terminator.*/
     char *cur_arg;
-    //cur_arg len to hold the length of str cur_arg points to
-    int cur_arg_length = 0;
+    uint32_t cur_arg_length = 0;
+
     for (size_t i = 0; i < argv; i++)
     {
+        /*  The first time that strtok is called it needs the
+            argument string as its first argument. Subsequent calls
+            require this to be replaced by NULL */
         if(i == 0)
         {
             cur_arg = strtok_r(arg_string, " ", &strtok_save);
@@ -617,21 +623,20 @@ pass_args_to_stack(void **esp, char *arg_string, int argv, int arg_size)
             cur_arg = strtok_r(NULL, " ", &strtok_save);
         }
         cur_arg_length = strlen(cur_arg) + 1;
+        /*  Copy argument to stack then increment the stack pointer
+            also copy the address of the argument in the stack to
+            its position lower down the stack at arg_pointers */
         strlcpy(stack_ptr, cur_arg, cur_arg_length);
-        //assign location of str to arg_pointers
-        //printf("putting address %x at %x",stack_ptr, arg_pointers);
-        *arg_pointers = stack_ptr;
-        //increment by 4
+        *arg_pointers = (uint32_t)stack_ptr;
         arg_pointers++;
-        //printf("DEBUG:%d: %s\n",i,stack_ptr);
         stack_ptr += cur_arg_length;
 
     }
-    //insert null pointer
+    /* insert null pointer at argc[argv] */
     *arg_pointers = 0;
 
-    //hex_dump ((uintptr_t) argc_init_ptr, argc_init_ptr ,104, true);
-    // update stack pointer and return
+    // hex_dump ((uintptr_t) argc_init_ptr, argc_init_ptr ,104, true);
+    /* update stack pointer and return success */
     *esp = argc_init_ptr;
     return 1;
 }
