@@ -237,8 +237,8 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
                           bool writable);
 
 
-int pass_args_to_stack(void **esp, char *arg_string, size_t argv, int arg_size);
-int parse_arg_string(const char *arg_string, int *argv);
+int pass_args_to_stack(void **esp, char *arg_string, size_t argc, int arg_size);
+int parse_arg_string(const char *arg_string, int *argc);
 /* Loads an ELF executable from FILE_NAME into the current thread.
    Stores the executable's entry point into *EIP
    and its initial stack pointer into *ESP.
@@ -531,10 +531,10 @@ install_page (void *upage, void *kpage, bool writable)
     and their total size. the total size is returned normally however
     the argc value is returned by reference */
 int
-parse_arg_string(const char *arg_string, int *argv)
+parse_arg_string(const char *arg_string, int *argc)
 {
     int decby = 0; /* total space needed for characters on stack */
-    int argv_tmp = 0; /* number of variables */
+    int argc_tmp = 0; /* number of variables */
     int newarg = 1; /* has iterator reached a new argument */
     int prevspace = 0; /* whether the previous position of iterator was a space */
 
@@ -546,7 +546,7 @@ parse_arg_string(const char *arg_string, int *argv)
         {
             if(newarg == 1)
             {
-                argv_tmp++;
+                argc_tmp++;
                 newarg = 0;
             }
             decby++;
@@ -563,21 +563,21 @@ parse_arg_string(const char *arg_string, int *argv)
         }
     }
 
-    /*  if string ends with space then it will count otherwise
+    /*  if string ends with space then it will already have counted otherwise
         add one more to make room for null terminator */
     if(arg_string[i - 1] != ' ')
     {
         decby++;
     }
     /* debug to check whether values are correct */
-    //printf("::DEBUG:: argv: %d, length: %d\n", argv_tmp, decby);
+    //printf("::DEBUG:: argc: %d, length: %d\n", argc_tmp, decby);
 
-    *argv = argv_tmp;
+    *argc = argc_tmp;
     return decby;
 }
 
 int
-pass_args_to_stack(void **esp, char *arg_string, size_t argv, int arg_size)
+pass_args_to_stack(void **esp, char *arg_string, size_t argc, int arg_size)
 {
     /* to store strtok_r position */
     char *strtok_save;
@@ -586,22 +586,23 @@ pass_args_to_stack(void **esp, char *arg_string, size_t argv, int arg_size)
     /* decrement pointer by arg_size to allow for
        arguments to be pushed on the stack */
     stack_ptr -= arg_size;
-    /* perform byte alignment */
+    /* perform byte alignment so pointers below are aligned
+       to 32 bit sections */
     uint32_t *arg_pointers = stack_ptr - ((uint32_t)stack_ptr % 4);
     /*
     if (arg_size %4)
       *arg_pointers = stack-ptr - (4 - (arg_size %4)); */
     /* create base pointer to argc[0] */
-    arg_pointers -= (argv + 1);
+    arg_pointers -= (argc + 1);
     /* and set to point to initial value of arg pointers
-       including argc** argv and finally the return address */
-    uint32_t *argc_init_ptr = (uint32_t*)arg_pointers;
-    argc_init_ptr -= 1;
-    *argc_init_ptr = (uint32_t)arg_pointers;
-    argc_init_ptr -= 1;
-    *argc_init_ptr = argv;
-    argc_init_ptr -= 1;
-    *argc_init_ptr = 0;
+       including argv** argc and finally the return address */
+    uint32_t *argv_init_ptr = (uint32_t*)arg_pointers;
+    argv_init_ptr -= 1;
+    *argv_init_ptr = (uint32_t)arg_pointers;
+    argv_init_ptr -= 1;
+    *argv_init_ptr = argc;
+    argv_init_ptr -= 1;
+    *argv_init_ptr = 0;
 
     /* cur arg to hold ptr to current argument
        string from strtok
@@ -610,7 +611,7 @@ pass_args_to_stack(void **esp, char *arg_string, size_t argv, int arg_size)
     char *cur_arg;
     uint32_t cur_arg_length = 0;
 
-    for (size_t i = 0; i < argv; i++)
+    for (size_t i = 0; i < argc; i++)
     {
         /*  The first time that strtok is called it needs the
             argument string as its first argument. Subsequent calls
@@ -633,12 +634,12 @@ pass_args_to_stack(void **esp, char *arg_string, size_t argv, int arg_size)
         stack_ptr += cur_arg_length;
 
     }
-    /* insert null pointer at argc[argv] */
+    /* insert null pointer at argv[argc] */
     *arg_pointers = 0;
 
-    hex_dump ((uintptr_t) argc_init_ptr, argc_init_ptr ,104, true);
+    hex_dump ((uintptr_t) argv_init_ptr, argv_init_ptr ,104, true);
     /* update stack pointer and return success */
-    *esp = argc_init_ptr;
+    *esp = argv_init_ptr;
     return 1;
 }
 
