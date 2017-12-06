@@ -36,7 +36,7 @@ process_execute (const char *file_name)
 {
   char *fn_copy;
   tid_t tid;
-  size_t name_len; // used to increment through arr
+  size_t name_len;
 
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
@@ -49,7 +49,7 @@ process_execute (const char *file_name)
 
 
   strlcpy (fn_copy, file_name, PGSIZE);
-  // parse file name for prog name
+  /* parse file name for prog name */
   for(name_len = 0;name_len < MAXFILENAMELEN;name_len++){
       if(file_name[name_len] == ' ')
       {
