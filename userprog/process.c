@@ -533,14 +533,13 @@ install_page (void *upage, void *kpage, bool writable)
 int
 parse_arg_string(const char *arg_string, int *argv)
 {
-    //set number_args to *argv
-    // return length
-    int decby = 0;
-    int argv_tmp = 0;
-    int newarg = 1;
-    int prevspace = 0;
-    size_t i = 0; // used in iterator
+    int decby = 0; /* total space needed for characters on stack */
+    int argv_tmp = 0; /* number of variables */
+    int newarg = 1; /* has iterator reached a new argument */
+    int prevspace = 0; /* whether the previous position of iterator was a space */
 
+
+    size_t i = 0;
     for (i = 0; arg_string[i] != '\0'; i++)
     {
         if(arg_string[i] != ' ')
