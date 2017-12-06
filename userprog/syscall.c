@@ -61,6 +61,9 @@ sema_up (&file_lock);
 */
 
 /*****Definitions****/
+
+/*  initialises system call handler and file
+    handling semaphore */
 void
 syscall_init (void)
 {
@@ -103,6 +106,9 @@ put_user (uint8_t *udst, uint8_t byte)
     return error_code != -1;
 }
 
+/*  validates that a pointer is below PHYS base
+    This function is used to extend the functionality
+    of put_user and get_user */
 static bool
 is_below_PHYS_BASE(const uint8_t *uaddr)
 {
@@ -111,11 +117,14 @@ is_below_PHYS_BASE(const uint8_t *uaddr)
     return uaddr < (uint8_t*)0xC0000000;
 }
 
+/*  Validates a pointer on the stack before returning it
+    This function was originally provided in syscall.c~
+    but has been edited to extend its functionality */
 static uint32_t
 load_stack(struct intr_frame *arg_container, int offset)
 {
-    // need to add check for valid address
-    // i.e. user can do bad things
+    /*  need to add check for valid address
+        i.e. user can do bad things */
     if(get_user (arg_container->esp + offset) == -1)
     {
         //printf("DEBUG:: loading stack with offset %d caused error :%x :\n", offset,  (unsigned)f->esp + offset);
@@ -124,6 +133,8 @@ load_stack(struct intr_frame *arg_container, int offset)
     return *((uint32_t*)(arg_container->esp + offset));
 }
 
+/*  tests whether a filename is valid string and
+    whether it exists in memory that can be legally accessed */
 bool
 is_valid_filename(const char *filename)
 {
@@ -147,6 +158,8 @@ is_valid_filename(const char *filename)
     return false;
 }
 
+/*  tests whether a buffer exists in memory
+    that can be legally accessed */
 bool is_valid_buffer(const char *buffer, size_t size)
 {
     for (size_t i = 0; i < size; i++)
@@ -160,8 +173,8 @@ bool is_valid_buffer(const char *buffer, size_t size)
 }
 
 
-// file handling functions
-// returns true if file map is uninitialised
+/* file handling functions
+   returns true if file map is uninitialised */
 bool
 file_list_uninitialised(struct hash *filesopen)
 {
@@ -325,7 +338,7 @@ syscall_handler (struct intr_frame *f)
 
 int handle_open (const char *file)
 {
-    printf("executing open\n");
+    //printf("executing open\n");
     //validate filename
     struct thread *current = thread_current();
     if(!is_valid_filename(file))
@@ -372,7 +385,7 @@ int handle_open (const char *file)
 
 void handle_close(const int fd)
 {
-    printf("executing handle_close\n");
+    //printf("executing handle_close\n");
     if (fd == STDIN_FILENO || fd == STDOUT_FILENO)
     {
         handle_exit(-1);
@@ -397,7 +410,7 @@ void handle_close(const int fd)
 
 int handle_filesize(const int fd)
 {
-    printf("executing handle_filesize\n");
+    //printf("executing handle_filesize\n");
 
     struct thread *current = thread_current();
     struct file_link *file_link1 =fd_lookup(fd, current->files_open);
@@ -415,7 +428,7 @@ int handle_filesize(const int fd)
 
 unsigned handle_tell(const int fd)
 {
-    printf("executing handle tell\n");
+    //printf("executing handle tell\n");
     struct thread *current = thread_current();
     struct file_link *file_link1 = fd_lookup(fd, current->files_open);
     if (file_link1 == NULL)
@@ -431,7 +444,7 @@ unsigned handle_tell(const int fd)
 
 void handle_seek(const int fd, unsigned position)
 {
-    printf("executing handle seek\n");
+    //printf("executing handle seek\n");
     struct thread *current = thread_current();
     struct file_link *file_link1 = fd_lookup(fd, current->files_open);
     if (file_link1 == NULL)
@@ -460,7 +473,7 @@ void handle_seek(const int fd, unsigned position)
 bool
 handle_create(const char* filename, unsigned initial_size)
 {
-    printf("executing handle create\n");
+    //printf("executing handle create\n");
     if(!is_valid_filename(filename))
     {
         //invalid filename
@@ -477,7 +490,7 @@ handle_create(const char* filename, unsigned initial_size)
 bool
 handle_remove (const char *filename)
 {
-    printf("executing handle remove\n");
+    //printf("executing handle remove\n");
     if(!is_valid_filename(filename))
     {
         //invalid filename
@@ -495,7 +508,7 @@ handle_remove (const char *filename)
 int
 handle_write(int fd, char* buffer, unsigned size)
 {
-    printf("executing handle write\n");
+    //printf("executing handle write\n");
     /*  if buffer is invalid or attempting write to
         stdin Kill process */
     if(!is_valid_buffer(buffer,size) || fd == STDIN_FILENO)
@@ -528,7 +541,7 @@ handle_write(int fd, char* buffer, unsigned size)
 int
 handle_read(int fd, void* buffer, unsigned size)
 {
-    printf("executing handle read\n");
+    //printf("executing handle read\n");
     /*  if buffer is invalid or attempting read from
         stdout Kill process */
     if(!is_valid_buffer(buffer,size) || fd == STDOUT_FILENO)
@@ -569,45 +582,13 @@ handle_read(int fd, void* buffer, unsigned size)
 void
 handle_exit(int status)
 {
-    printf("executing handle exit\n");
+    //printf("executing handle exit\n");
     struct thread *current = thread_current();
     if (current->files_open != NULL)
     {
         // if filesopen is not null then empty it and deallocate memory
         close_remaining_files();
     }
-    /*
-    //test hash
-        // test insert
-        struct file_link *new, *new2;
-        new = malloc(sizeof(struct file_link));
-        new->fd = 2;
-        new->DEBUG = 'a';
-        hash_insert (current->files_open, &new->hash_elem);
-
-        new2 = malloc(sizeof(struct file_link));
-        new2->fd = 3;
-        new2->DEBUG = 'x';
-        hash_insert (current->files_open, &new2->hash_elem);
-
-        // now to find
-        struct file_link *result = fd_lookup(3, current->files_open);
-        if(result != NULL)
-        {
-            printf("%c\n",result->DEBUG);
-        }else{
-            printf("not found\n");
-        }
-        result = fd_lookup(2, current->files_open);
-        if(result != NULL)
-        {
-            printf("%c\n",result->DEBUG);
-        }else{
-            printf("not found\n");
-        }
-        hash_delete(current->files_open, &new2->hash_elem);
-    //stop test
-    */
 
     current->exit_status = status;
     thread_exit();
