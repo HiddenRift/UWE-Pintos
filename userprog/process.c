@@ -1,3 +1,6 @@
+/*  Robert Fry - 15021296
+    Sean Kearney -
+    Alex Foulds -  */
 #include "userprog/process.h"
 #include <debug.h>
 #include <inttypes.h>
@@ -495,9 +498,8 @@ setup_stack (void **esp)
   if (kpage != NULL)
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
-      if (success) {
-          //minor change to get program running that dont examine vars
-        //*esp = PHYS_BASE-12;
+      if (success)
+      {
         *esp = PHYS_BASE;
       } else
         palloc_free_page (kpage);
@@ -586,7 +588,7 @@ pass_args_to_stack(void **esp, char *arg_string, size_t argv, int arg_size)
        arguments to be pushed on the stack */
     stack_ptr -= arg_size;
     /* perform byte alignment */
-    uint32_t *arg_pointers = (uint32_t*)stack_ptr - ((uint32_t)stack_ptr % 4);
+    uint32_t *arg_pointers = stack_ptr - ((uint32_t)stack_ptr % 4);
     /*
     if (arg_size %4)
       *arg_pointers = stack-ptr - (4 - (arg_size %4)); */
@@ -635,7 +637,7 @@ pass_args_to_stack(void **esp, char *arg_string, size_t argv, int arg_size)
     /* insert null pointer at argc[argv] */
     *arg_pointers = 0;
 
-    // hex_dump ((uintptr_t) argc_init_ptr, argc_init_ptr ,104, true);
+    hex_dump ((uintptr_t) argc_init_ptr, argc_init_ptr ,104, true);
     /* update stack pointer and return success */
     *esp = argc_init_ptr;
     return 1;
