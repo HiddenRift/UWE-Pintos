@@ -340,7 +340,7 @@ int handle_open (const char *file)
 {
     //printf("executing open\n");
     //validate filename
-    //file = NULL;
+    /*file = NULL;*/
     struct thread *current = thread_current();
     if(!is_valid_filename(file))
     {
