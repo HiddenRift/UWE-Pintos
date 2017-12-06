@@ -340,9 +340,11 @@ int handle_open (const char *file)
 {
     //printf("executing open\n");
     //validate filename
+    //file = NULL;
     struct thread *current = thread_current();
     if(!is_valid_filename(file))
     {
+        /*printf("not valid");*/
         return -1;
     }
     //find unnoccupied fd after 2
