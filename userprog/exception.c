@@ -164,5 +164,12 @@ page_fault (struct intr_frame *f)
           not_present ? "not present" : "rights violation",
           write ? "writing" : "reading",
           user ? "user" : "kernel");
-  //kill (f);
+  /*
+  if in kernel trust it and dont kill process
+  */
+  printf("DEBUG:: %x\n", user);
+  if(user != 0)
+  {
+    kill (f);
+  }
 }
