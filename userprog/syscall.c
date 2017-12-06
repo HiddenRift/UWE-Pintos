@@ -345,42 +345,47 @@ syscall_handler (struct intr_frame *f)
 int handle_open (const char *file)
 {
     //printf("executing open\n");
-    //validate filename
-    /*file = NULL;*/
+    /* validate filename */
+    /* file = NULL; */
     struct thread *current = thread_current();
     if(!is_valid_filename(file))
     {
         /*printf("not valid");*/
         return -1;
     }
-    //find unnoccupied fd after 2
+    /* find unnoccupied fd after 2 and exit loop
+       otherwise */
     int fd = -1;
     for (int potential_fd = 2; potential_fd > 1; potential_fd++)
     {
         if(fd_lookup(potential_fd, current->files_open) == NULL)
         {
-            //potfd is free/
+            /* save potential_fd to variable so process doesn't fail */
             fd = potential_fd;
-            //we can now break out of loop
             break;
         }
     }
+    /* if fd is still -1 return 1 as no more descriptors available */
     if(fd == -1)
     {
-        // fd is unchanged so no fd was found
         return -1;
     }
+
+    /* attempt opening file and check if the function returned
+       a null pointer. if it did the file doesnt exist */
     sema_down (&file_lock);
     struct file *opened_file = filesys_open (file);
     sema_up (&file_lock);
     if(opened_file == NULL)
     {
-        // file cannot be opened so release lock and return error val
         return -1;
     }
+
+    /* attempt inserting the fd  and file pointer to the hash
+       if insertion fails close file to prevent it being left open and
+       to avoid memory leaks */
     if(insert_file_link(fd, opened_file) == false)
     {
-        // memory allocation failed so tidy up after ourselves, release lock and return error val
         sema_down (&file_lock);
         file_close (opened_file);
         sema_up (&file_lock);
@@ -393,23 +398,22 @@ int handle_open (const char *file)
 
 void handle_close(const int fd)
 {
-    //printf("executing handle_close\n");
+    /* printf("executing handle_close\n"); */
     if (fd == STDIN_FILENO || fd == STDOUT_FILENO)
     {
         handle_exit(-1);
     }
     struct thread *current = thread_current();
     struct file_link *file_link1 = fd_lookup(fd, current->files_open);
+    /* if file is open then close  */
     if(file_link1 != NULL)
     {
-
+        /* close file and deallocate the file link from memory
+           after removing from hash */
         sema_down (&file_lock);
-        //file is opened so close it
         file_close (file_link1->fileinfo);
-        // now remove from hash;
         hash_delete(current->files_open, &file_link1->hash_elem);
         sema_up (&file_lock);
-        // and finally free filelink struct
         free(file_link1);
     }
 
@@ -424,10 +428,10 @@ int handle_filesize(const int fd)
     struct file_link *file_link1 =fd_lookup(fd, current->files_open);
     if (file_link1 == NULL)
     {
-        // file isnt open// possibly kill process
+        /* file isnt open possibly kill process */
         return 0;
     }
-    //file exists so try getting size
+    /* file exists so try getting size */
     sema_down (&file_lock);
     int return_val = (int)file_length (file_link1->fileinfo);
     sema_up (&file_lock);
@@ -441,7 +445,7 @@ unsigned handle_tell(const int fd)
     struct file_link *file_link1 = fd_lookup(fd, current->files_open);
     if (file_link1 == NULL)
     {
-        // file isnt open// possibly kill process
+        /* file isnt open possibly kill process */
         return 0;
     }
     sema_down (&file_lock);
@@ -457,21 +461,20 @@ void handle_seek(const int fd, unsigned position)
     struct file_link *file_link1 = fd_lookup(fd, current->files_open);
     if (file_link1 == NULL)
     {
-        // file isnt open// possibly kill process
+        /* file isnt open possibly kill process */
         handle_exit(-1);
         return;
     }
 
     if(position < (unsigned)file_length(file_link1->fileinfo))
     {
-        // valid
+        /* valid */
         sema_down (&file_lock);
         file_seek(file_link1->fileinfo, position);
         sema_up (&file_lock);
     }
     else
     {
-        // position out of bounds
         handle_exit(-1);
     }
     return;
@@ -484,7 +487,7 @@ handle_create(const char* filename, unsigned initial_size)
     //printf("executing handle create\n");
     if(!is_valid_filename(filename))
     {
-        //invalid filename
+        /* invalid filename */
         return false;
     }
     //filename valid attempt filecreate / return val
@@ -501,11 +504,9 @@ handle_remove (const char *filename)
     //printf("executing handle remove\n");
     if(!is_valid_filename(filename))
     {
-        //invalid filename
-        //printf("invalid filename");
+        /* invalid filename */
         return false;
     }
-    //filename valid attempt fileremove / return val
     sema_down (&file_lock);
     bool return_val = filesys_remove(filename);
     sema_up (&file_lock);
@@ -525,18 +526,20 @@ handle_write(int fd, char* buffer, unsigned size)
         handle_exit(-1);
         return 0;
     }
+    /* if fd is for output write validated buffer to
+       putbuf */
     if(fd == STDOUT_FILENO)
     {
         putbuf (buffer, size);
         return size;
     }
 
-    //get file from fd and check if it exists
+    /* get file from fd and check if it exists */
     struct thread *current = thread_current();
     struct file_link *file_link1 = fd_lookup(fd, current->files_open);
     if (file_link1 == NULL)
     {
-        // file isnt open// kill process
+        /* invalid fd so kill process */
         handle_exit(-1);
         return 0;
     }
@@ -560,24 +563,26 @@ handle_read(int fd, void* buffer, unsigned size)
     }
     if(fd == STDIN_FILENO)
     {
-        //printf("DEBUG:: READING FROM KEYBOARD\n");
+        /* if fd points to stdin then  */
         size_t i;
         for (i = 0; i < size; i++) {
             if (!put_user(buffer+i, input_getc()))
             {
-                // if put_user detects segfault  exit with exception;
+                /* if put user encounters an error it terminates the
+                   process */
                 handle_exit(-1);
                 break;
             }
         }
         return i;
     }
-    //get file from fd and check if it exists
+    /* get file link from fd and check if it exists
+       by checking pointer is not null */
     struct thread *current = thread_current();
     struct file_link *file_link1 = fd_lookup(fd, current->files_open);
     if (file_link1 == NULL)
     {
-        // file isnt open// kill process
+        /* file isnt open kill process */
         handle_exit(-1);
         return 0;
     }
@@ -595,7 +600,7 @@ handle_exit(int status)
     struct thread *current = thread_current();
     if (current->files_open != NULL)
     {
-        // if filesopen is not null then empty it and deallocate memory
+        /*if filesopen is not null then empty it and deallocate memory */
         close_remaining_files();
     }
 
