@@ -151,6 +151,7 @@ is_valid_filename(const char *filename)
         else
         {
             //segv occurred
+            //printf("filename location invalid");
             return false;
         }
     }
@@ -496,6 +497,7 @@ handle_remove (const char *filename)
     if(!is_valid_filename(filename))
     {
         //invalid filename
+        //printf("invalid filename");
         return false;
     }
     //filename valid attempt fileremove / return val
