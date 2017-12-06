@@ -23,7 +23,7 @@ static void syscall_handler (struct intr_frame *);
 // validation function prototypes
 static int get_user (const uint8_t *uaddr);
 static bool put_user (uint8_t *udst, uint8_t byte);
-static uint32_t load_stack(struct intr_frame *f, int offset);
+static uint32_t load_stack(struct intr_frame *arg_container, int offset);
 static bool is_below_PHYS_BASE(const uint8_t *uaddr);
 bool is_valid_filename(const char *filename);
 bool is_valid_buffer(const char *buffer, size_t size);
@@ -112,16 +112,16 @@ is_below_PHYS_BASE(const uint8_t *uaddr)
 }
 
 static uint32_t
-load_stack(struct intr_frame *f, int offset)
+load_stack(struct intr_frame *arg_container, int offset)
 {
     // need to add check for valid address
     // i.e. user can do bad things
-    if(get_user (f->esp + offset) == -1)
+    if(get_user (arg_container->esp + offset) == -1)
     {
         //printf("DEBUG:: loading stack with offset %d caused error :%x :\n", offset,  (unsigned)f->esp + offset);
         handle_exit(-1);
     }
-    return *((uint32_t*)(f->esp + offset));
+    return *((uint32_t*)(arg_container->esp + offset));
 }
 
 bool
